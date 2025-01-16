@@ -55,6 +55,8 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [newPrimaryValue, setNewPrimaryValue] = useState(''); 
     const [successMessage, setSuccessMessage] = useState('');
     const [messageBox, setMessageBox] = useState({ show: false, text: '' });
+    const [selectedSite, setSelectedSite] = useState(''); // State to store the selected site
+
 
 
 
@@ -115,29 +117,33 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
 
     const handleArraySelection = async (e) => {
-        const arrayName = e.target.value;
-        const selected = arrayOptions.find(array => array.name === arrayName);
-        setSelectedArray(selected);
-        setPrimaryFields([]);
-        setSelectedField(null);
-
-        if (selected && selected.docId && deleteMode === 'field') {
+        const arrayName = e.target.value; // Selected array name
+        setSelectedArray(arrayName);
+        setPrimaryFields([]); // Clear previous primary fields
+        setSelectedField(null); // Clear previously selected field
+    
+        if (arrayName) {
             try {
-                const docRef = doc(db, 'AnswerSet', selected.docId);
-                const docSnapshot = await getDoc(docRef);
-
-                if (docSnapshot.exists()) {
-                    const answers = docSnapshot.data().answers || [];
-                    const primaryFields = answers.map(field => field.primary).filter(Boolean);
-                    setPrimaryFields(primaryFields);
-                    console.log("Primary fields:", primaryFields);
+                // Find the selected array's document in Firestore
+                const selected = arrayOptions.find(array => array.name === arrayName);
+                if (selected && selected.docId) {
+                    const docRef = doc(db, 'AnswerSet', selected.docId);
+                    const docSnapshot = await getDoc(docRef);
+    
+                    if (docSnapshot.exists()) {
+                        const answers = docSnapshot.data().answers || [];
+                        const primaryFields = answers.map(field => field.primary); // Extract primary fields
+                        setPrimaryFields(primaryFields); // Set primary fields as options
+                    } else {
+                        console.error('Document does not exist.');
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching primary fields:', error);
             }
         }
     };
-
+    
     const handleDeleteArrayClick = async () => {
         if (arrayOptions.length === 0) {
             await fetchDocuments(); // Ensure arrays are loaded
@@ -147,28 +153,71 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
     
     const confirmDeleteArray = async () => {
-        if (selectedArray) {
-            const { docId, name } = selectedArray;
+        if (!selectedProject || !selectedSite || !selectedArray) {
+            alert('Please select a project, site, and array.');
+            console.error('Missing values:', {
+                selectedProject,
+                selectedSite,
+                selectedArray,
+            });
+            return;
+        }
     
+        const arrayToDelete = arrayOptions.find((array) => array.name === selectedArray);
+        if (arrayToDelete && arrayToDelete.docId) {
             try {
-                const docRef = doc(db, 'AnswerSet', docId);
-                await deleteDoc(docRef);
+                const docRef = doc(db, 'AnswerSet', arrayToDelete.docId);
+                const docSnapshot = await getDoc(docRef);
     
-                setArrayOptions((prevArrayOptions) =>
-                    prevArrayOptions.filter((array) => array.docId !== docId)
-                );
+                if (docSnapshot.exists()) {
+                    const updatedAnswers = docSnapshot
+                        .data()
+                        .answers.filter((entry) => entry.primary !== selectedArray);
     
-                setSelectedArray(null);
-                triggerRerender();
-                setMessageBox({ show: true, text: ` ${name} deleted successfully.` });
+                    await updateDoc(docRef, { answers: updatedAnswers });
+    
+                    // Update UI
+                    setArrayOptions(updatedAnswers.map((entry) => ({ name: entry.primary, docId: arrayToDelete.docId })));
+                    setSelectedArray(null);
+                    alert(`${selectedArray} deleted successfully.`);
+                } else {
+                    console.error('Document does not exist.');
+                }
             } catch (error) {
-                console.error('Error deleting document:', error);
-                setMessageBox({ show: true, text: 'Failed to delete the document.' });
-            } finally {
-                setShowDeleteConfirm(false);
+                console.error('Error deleting array:', error);
+                alert('Failed to delete the array.');
             }
         }
     };
+    
+    
+    
+    const fetchArraysForSite = async (projectName, siteName) => {
+        const arraySetName = `${projectName}${siteName}Array`; // Construct set_name format
+    
+        try {
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0]; // Assuming only one document matches
+                const data = docSnapshot.data();
+    
+                // Extract `primary` fields from the answers array
+                const primaryValues = (data.answers || []).map(answer => answer.primary);
+                setPrimaryFields(primaryValues); // Update primary fields
+                console.log('Primary Values:', primaryValues); // Log fetched primary fields
+            } else {
+                console.error(`No document found for set_name: ${arraySetName}`);
+                setPrimaryFields([]); // Clear options if no document matches
+            }
+        } catch (error) {
+            console.error(`Error fetching arrays for site ${siteName}:`, error);
+            setPrimaryFields([]); // Handle errors by clearing the dropdown
+        }
+    };
+    
+    
     
     
 
@@ -186,9 +235,11 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
                 <select
                     value={selectedProject}
                     onChange={(e) => {
+                        handleProjectSelection(e.target.value);
                         setSelectedProject(e.target.value);
-                        fetchSitesForProject(e.target.value); // Fetch sites for the selected project
                     }}
+                    
+                    
                     className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
                 >
                     <option value="">Select a Project</option>
@@ -198,23 +249,53 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
                 </select>
     
                 {/* Conditional Site Dropdown */}
-                {selectedProject && (
-                    <>
-                        <label className="block mb-2 font-medium">Select Site:</label>
-                        <select
-                            value={selectedSite}
-                            onChange={(e) => setSelectedSite(e.target.value)}
-                            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                        >
-                            <option value="">Select a Site</option>
-                            {siteOptions.map((site, index) => (
-                                <option key={index} value={site}>
-                                    {site}
-                                </option>
-                            ))}
-                        </select>
-                    </>
-                )}
+{selectedProject && (
+    <>
+        <label className="block mb-2 font-medium">Select Site:</label>
+        <select
+            value={selectedSite}
+            onChange={(e) => handleSiteSelection(e.target.value)} // Use handleSiteSelection here
+            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+        >
+            <option value="">Select a Site</option>
+            {siteOptions.map((site, index) => (
+                <option key={index} value={site}>
+                    {site}
+                </option>
+            ))}
+        </select>
+    </>
+)}
+
+               {/* Array Dropdown */}
+               {selectedSite&& (
+    <>
+    {primaryFields.length > 0 ? (
+    <>
+        <label className="block mb-2 font-medium">Select an Array to delete:</label>
+        <select
+            value={selectedField || ''}
+            onChange={(e) => setSelectedField(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+        >
+            <option value="">Arrays</option>
+            {primaryFields.map((field, index) => (
+                <option key={index} value={field}>
+                    {field}
+                </option>
+            ))}
+        </select>
+    </>
+) : (
+    <p>No Arrays Available</p>
+)}
+
+       
+    </>
+)}
+
+
+
     
                 {/* Delete Button */}
                 <div className="flex justify-end space-x-2">
@@ -237,6 +318,14 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             </div>
         </div>
     );
+    
+    const handleSiteSelection = (siteName) => {
+        setSelectedSite(siteName);
+        if (selectedProject && siteName) {
+            fetchArraysForSite(selectedProject, siteName);
+        }
+    };
+    
     
 
     const handleAddArrayClick = () => {
