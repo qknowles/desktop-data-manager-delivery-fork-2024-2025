@@ -178,79 +178,66 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             <div className="bg-white dark:bg-neutral-900 dark:text-white p-6 rounded-lg shadow-lg w-80">
                 <h2 className="text-xl font-bold mb-4">Delete Options</h2>
                 <p className="text-sm text-gray-600 dark:text-neutral-400 mb-4 text-center">
-                        Delete entire array will allow you to delete the array document in its entirety and delete array field will let you delete a primary field from your array of choice.
-                    </p>
-                <div className="flex flex-col mb-4">
-                    <Button 
-                        onClick={() => setDeleteMode('array')}
-                        text="Delete Entire Array"
-                        className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center w-full mb-2"
-                    />
-                    <Button 
-                        onClick={() => setDeleteMode('field')}
-                        text="Delete Array Field"
-                        className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center w-full"
-                    />
-                </div>
-
-                {deleteMode && (
+                    Select a project and site to delete the associated array.
+                </p>
+    
+                {/* Project Dropdown */}
+                <label className="block mb-2 font-medium">Select Project:</label>
+                <select
+                    value={selectedProject}
+                    onChange={(e) => {
+                        setSelectedProject(e.target.value);
+                        fetchSitesForProject(e.target.value); // Fetch sites for the selected project
+                    }}
+                    className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                >
+                    <option value="">Select a Project</option>
+                    <option value="Gateway">Gateway</option>
+                    <option value="San Pedro">San Pedro</option>
+                    <option value="Virgin River">Virgin River</option>
+                </select>
+    
+                {/* Conditional Site Dropdown */}
+                {selectedProject && (
                     <>
+                        <label className="block mb-2 font-medium">Select Site:</label>
                         <select
-                            className="mb-4 p-2 border rounded w-full"
-                            value={selectedArray ? selectedArray.name : ""}
-                            onChange={handleArraySelection}
+                            value={selectedSite}
+                            onChange={(e) => setSelectedSite(e.target.value)}
+                            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
                         >
-                            <option value="" disabled>Select an array</option>
-                            {arrayOptions.map((array, index) => (
-                                <option key={index} value={array.name}>
-                                    {array.name}
+                            <option value="">Select a Site</option>
+                            {siteOptions.map((site, index) => (
+                                <option key={index} value={site}>
+                                    {site}
                                 </option>
                             ))}
                         </select>
                     </>
                 )}
-
-                {deleteMode === 'field' && primaryFields.length > 0 && (
-                    <select
-                        className="mb-4 p-2 border rounded w-full"
-                        value={selectedField || ""}
-                        onChange={(e) => setSelectedField(e.target.value)}
-                    >
-                        <option value="" disabled>Select a primary field</option>
-                        {primaryFields.map((field, index) => (
-                            <option key={index} value={field}>{field}</option>
-                        ))}
-                    </select>
-                )}
-
+    
+                {/* Delete Button */}
                 <div className="flex justify-end space-x-2">
                     <Button
                         onClick={() => {
                             setShowDeleteConfirm(false);
-                            setDeleteMode('');
+                            setSelectedProject('');
+                            setSelectedSite('');
                         }}
                         text="Cancel"
-                        className="bg-red text-white px-4 py-2 rounded mb-2"
+                        className="bg-red text-white px-4 py-2 rounded"
                     />
-                    {deleteMode === 'array' ? (
-                        <Button
-                            onClick={confirmDeleteArray}
-                            text="Delete Array"
-                            className="bg-red text-white px-6 py-3 rounded w-full"
-                            disabled={!selectedArray}
-                        />
-                    ) : (
-                        <Button 
-                            onClick={confirmDeletePrimaryField}
-                            text="Delete Field"
-                            className="bg-red text-white px-6 py-3 rounded w-full"
-                            disabled={!selectedField}
-                        />
-                    )}
+                    <Button
+                        onClick={confirmDeleteArray}
+                        text="Delete Array"
+                        className="bg-red text-white px-6 py-3 rounded w-full"
+                        disabled={!selectedProject || !selectedSite}
+                    />
                 </div>
             </div>
         </div>
     );
+    
 
     const handleAddArrayClick = () => {
         setShowAddArrayModal(true);
