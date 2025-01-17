@@ -153,6 +153,12 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
     
     const confirmDeleteArray = async () => {
+        console.log('Selected values:', {
+            selectedProject,
+            selectedSite,
+            selectedArray,
+        });
+        
         if (!selectedProject || !selectedSite || !selectedArray) {
             alert('Please select a project, site, and array.');
             console.error('Missing values:', {
