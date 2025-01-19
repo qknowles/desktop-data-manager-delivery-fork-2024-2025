@@ -56,6 +56,12 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [successMessage, setSuccessMessage] = useState('');
     const [messageBox, setMessageBox] = useState({ show: false, text: '' });
     const [selectedSite, setSelectedSite] = useState(''); // State to store the selected site
+    const [showConfirmationBox, setShowConfirmationBox] = useState(false);
+    const [deletionDetails, setDeletionDetails] = useState({
+       project: '',
+       site: '',
+       array: '',
+    });
 
 
 
@@ -151,50 +157,52 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         setShowDeleteConfirm(true); // Open delete confirmation modal
         setDeleteMode(''); // Reset the delete mode
     };
-    
     const confirmDeleteArray = async () => {
         console.log('Selected values:', {
             selectedProject,
             selectedSite,
             selectedArray,
         });
-        
+    
         if (!selectedProject || !selectedSite || !selectedArray) {
             alert('Please select a project, site, and array.');
-            console.error('Missing values:', {
-                selectedProject,
-                selectedSite,
-                selectedArray,
-            });
             return;
         }
     
-        const arrayToDelete = arrayOptions.find((array) => array.name === selectedArray);
-        if (arrayToDelete && arrayToDelete.docId) {
-            try {
-                const docRef = doc(db, 'AnswerSet', arrayToDelete.docId);
-                const docSnapshot = await getDoc(docRef);
+        try {
+            // Construct set_name based on selected project and site
+            const arraySetName = `${selectedProject}${selectedSite}Array`;
     
-                if (docSnapshot.exists()) {
-                    const updatedAnswers = docSnapshot
-                        .data()
-                        .answers.filter((entry) => entry.primary !== selectedArray);
+            // Query Firestore for the matching document
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
+            const querySnapshot = await getDocs(q);
     
-                    await updateDoc(docRef, { answers: updatedAnswers });
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0]; // Assuming only one document matches
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id); // Reference to the Firestore document
+                const data = docSnapshot.data();
     
-                    // Update UI
-                    setArrayOptions(updatedAnswers.map((entry) => ({ name: entry.primary, docId: arrayToDelete.docId })));
-                    setSelectedArray(null);
-                    alert(`${selectedArray} deleted successfully.`);
-                } else {
-                    console.error('Document does not exist.');
-                }
-            } catch (error) {
-                console.error('Error deleting array:', error);
-                alert('Failed to delete the array.');
+                // Filter out the selected array from the answers field
+                const updatedAnswers = data.answers.filter((entry) => entry.primary !== selectedArray);
+    
+                // Update the Firestore document
+                await updateDoc(docRef, { answers: updatedAnswers });
+    
+                // Update UI
+                setPrimaryFields(updatedAnswers.map((entry) => entry.primary));
+                setSelectedArray(null);
+                alert(`Array "${selectedArray}" deleted successfully.`);
+            } else {
+                console.error(`No document found for set_name: ${arraySetName}`);
             }
+        } catch (error) {
+            console.error('Error deleting array:', error);
+            alert('Failed to delete the array.');
+        } finally {
+            setShowDeleteConfirm(false);
         }
     };
+    
     
     
     
@@ -243,6 +251,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
                     onChange={(e) => {
                         handleProjectSelection(e.target.value);
                         setSelectedProject(e.target.value);
+                        console.log("Project Selected:", e.target.value);
                     }}
                     
                     
@@ -280,11 +289,11 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     <>
         <label className="block mb-2 font-medium">Select an Array to delete:</label>
         <select
-            value={selectedField || ''}
-            onChange={(e) => setSelectedField(e.target.value)}
+            value={selectedArray || ''}
+            onChange={(e) => setSelectedArray(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
         >
-            <option value="">Arrays</option>
+            <option value=""></option>
             {primaryFields.map((field, index) => (
                 <option key={index} value={field}>
                     {field}
@@ -305,20 +314,21 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     
                 {/* Delete Button */}
                 <div className="flex justify-end space-x-2">
-                    <Button
-                        onClick={() => {
-                            setShowDeleteConfirm(false);
-                            setSelectedProject('');
-                            setSelectedSite('');
-                        }}
-                        text="Cancel"
-                        className="bg-red text-white px-4 py-2 rounded"
-                    />
+                <Button
+    onClick={() => {
+        setShowDeleteConfirm(false);
+        setSelectedProject('');
+        setSelectedSite('');
+        setSelectedArray('');
+    }}
+    text="Cancel"
+    className="bg-red text-white px-4 py-2 rounded"
+/>
                     <Button
                         onClick={confirmDeleteArray}
                         text="Delete Array"
                         className="bg-red text-white px-6 py-3 rounded w-full"
-                        disabled={!selectedProject || !selectedSite}
+                        disabled={!selectedProject || !selectedSite || !selectedArray}
                     />
                 </div>
             </div>
@@ -332,6 +342,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         }
     };
     
+   
     
 
     const handleAddArrayClick = () => {
