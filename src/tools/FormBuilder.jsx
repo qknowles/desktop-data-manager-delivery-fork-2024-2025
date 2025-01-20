@@ -45,6 +45,10 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [speciesOptions, setSpeciesOptions] = useState([]);
     const [showAddSpeciesForm, setShowAddSpeciesForm] = useState(false);
     const [selectedCritter, setSelectedCritter] = useState('');
+    const [existingArrays, setExistingArrays] = useState([]);
+    const [message, setMessage] = useState('');
+    const [showExistingArrays, setShowExistingArrays] = useState(false);
+
 
     const [newPrimary, setNewPrimary] = useState('');
     const [newGenus, setNewGenus] = useState('');
@@ -392,6 +396,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             setMessageBox({ show: true, text: 'Failed to add the array.' });
         }
     };    
+
     
     
     
@@ -750,6 +755,71 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         });
     };
 
+    const fetchExistingArrays = async () => {
+        if (!selectedProject || !selectedSite) {
+            setMessage('Please select both project and site.');
+            return;
+        }
+    
+        const arraySetName = `${selectedProject}${selectedSite}Array`;
+    
+        try {
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0];
+                const data = docSnapshot.data();
+                const primaryValues = data.answers.map(entry => entry.primary);
+                setExistingArrays(primaryValues);
+                setShowExistingArrays(true);
+                setMessage('');
+            } else {
+                setExistingArrays([]);
+                setMessage(`No existing arrays found for ${selectedProject} - ${selectedSite}`);
+            }
+        } catch (error) {
+            console.error('Error fetching existing arrays:', error);
+            setMessage('Error fetching existing arrays.');
+        }
+    };
+
+    const handleAddNewArray = async () => {
+        if (!newArrayName.trim()) {
+            setMessage('Please enter an array name.');
+            return;
+        }
+    
+        if (existingArrays.includes(newArrayName)) {
+            setMessage('This array name already exists. Please choose a different name.');
+            return;
+        }
+    
+        try {
+            const arraySetName = `${selectedProject}${selectedSite}Array`;
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0];
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id);
+    
+                await updateDoc(docRef, {
+                    answers: [...docSnapshot.data().answers, { primary: newArrayName }],
+                });
+    
+                setExistingArrays([...existingArrays, newArrayName]);
+                setNewArrayName('');
+                setMessage('New array added successfully!');
+                setShowExistingArrays(true);
+            } else {
+                setMessage(`No document found for ${arraySetName}`);
+            }
+        } catch (error) {
+            console.error('Error adding new array:', error);
+            setMessage('Error adding array. Please try again.');
+        }
+    };
     const renderModalContent = () => {
         switch (modalStep) {
             case 1:
@@ -1100,68 +1170,105 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             )}
 
 {showAddArrayModal && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
-            <h2 className="text-xl font-bold mb-4">Add New Array</h2>
-            <label className="block mb-2 font-medium">Array Name:</label>
-            <input
-                type="text"
-                value={newArrayName}
-                onChange={(e) => setNewArrayName(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                placeholder="Enter array name"
-            />
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
+                    <h2 className="text-xl font-bold mb-4">Manage Arrays</h2>
 
-            <label className="block mb-2 font-medium">Primary Values:</label>
-            {primaryValues.map((value, index) => (
-                <p key={index} className="ml-2 mb-2 text-gray-700">- {value}</p>
-            ))}
-            <input
-                type="text"
-                value={newPrimaryValue}
-                onChange={(e) => setNewPrimaryValue(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                placeholder="Enter primary value"
-            />
-            <Button 
-                onClick={handleAddPrimaryValue} 
-                text="Add Primary Value" 
-                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
-            />
+                    {/* Project Dropdown */}
+                    <label className="block mb-2 font-medium">Select Project:</label>
+                    <select
+                        value={selectedProject}
+                        onChange={(e) => {
+                            handleProjectSelection(e.target.value);
+                            setSelectedProject(e.target.value);
+                        }}
+                        className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                    >
+                        <option value="">Select a Project</option>
+                        <option value="Gateway">Gateway</option>
+                        <option value="San Pedro">San Pedro</option>
+                        <option value="Virgin River">Virgin River</option>
+                    </select>
 
-            <label className="block mb-2 font-medium">Secondary Keys:</label>
-             {secondaryKeys.map((key, index) => (
-            <p key={index} className="ml-2 mb-2 text-gray-700">- {key}</p>
-            ))}
-            <input
-                type="text"
-                value={newSecondaryKey}
-                onChange={(e) => setNewSecondaryKey(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                placeholder="Enter secondary key"
-           />
-            <Button 
-                onClick={handleAddSecondaryKey} 
-                text="Add Secondary Key" 
-                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
-            />
+                    {/* Site Dropdown */}
+                    {selectedProject && (
+                        <>
+                            <label className="block mb-2 font-medium">Select Site:</label>
+                            <select
+                                value={selectedSite}
+                                onChange={(e) => handleSiteSelection(e.target.value)}
+                                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                            >
+                                <option value="">Select a Site</option>
+                                {siteOptions.map((site, index) => (
+                                    <option key={index} value={site}>
+                                        {site}
+                                    </option>
+                                ))}
+                            </select>
+                        </>
+                    )}
 
+                    {/* Buttons for Viewing and Adding Arrays */}
+                    {selectedProject && selectedSite && (
+                        <>
+                            <Button
+                                onClick={fetchExistingArrays}
+                                text="View existing arrays"
+                                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2"
+                            />
+                            <Button
+                                onClick={() => setShowExistingArrays(false)}
+                                text="Add new array"
+                                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-4"
+                            />
+                        </>
+                    )}
 
-            <div className="flex justify-end space-x-2">
-                <Button 
-                    onClick={() => setShowAddArrayModal(false)} 
-                    text="Cancel" 
-                    className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center" 
-                />
-                <Button 
-                    onClick={handleSubmitNewArray} 
-                    text="Add Array" 
-                    className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center" 
-                />
+                    {/* Show existing arrays */}
+                    {showExistingArrays && existingArrays.length > 0 && (
+                        <div className="mt-4">
+                            <h3 className="text-lg font-bold">Existing Arrays:</h3>
+                            <ul className="list-disc pl-5">
+                                {existingArrays.map((array, index) => (
+                                    <li key={index} className="text-gray-700 dark:text-gray-300">{array}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Add new array input */}
+                    {selectedProject && selectedSite && !showExistingArrays && (
+                        <>
+                            <input
+                                type="text"
+                                value={newArrayName}
+                                onChange={(e) => setNewArrayName(e.target.value)}
+                                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                                placeholder="Enter new array name"
+                            />
+                            <Button
+                                onClick={handleAddNewArray}
+                                text="Add Array"
+                                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2"
+                            />
+                        </>
+                    )}
+
+                    {/* Display messages */}
+                    {message && <p className="text-red-500 text-sm">{message}</p>}
+
+                    <div className="flex justify-end space-x-2">
+                        <Button
+                            onClick={() => setShowAddArrayModal(false)}
+                            text="Cancel"
+                            className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center"
+                        />
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-)}
+        )}
+
 {successMessage && (
     <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-md">
         {successMessage}
