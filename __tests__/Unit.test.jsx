@@ -165,9 +165,19 @@ test('calls onClick when Tab is clicked', () => {
 
 //TableHeading Tests
 test('renders TableHeading with label and sort icon', () => {
-  render(<TableHeading label="Name" active sortDirection="asc" onClick={() => {}} />);
+  render(
+      <table>
+          <thead>
+              <tr>
+                  <TableHeading label="Name" active sortDirection="asc" onClick={() => {}} />
+              </tr>
+          </thead>
+      </table>
+  );
+
+  // Assertions
   expect(screen.getByText('Name')).toBeInTheDocument();
-  expect(document.querySelector('svg')).toBeInTheDocument();
+  expect(document.querySelector('svg')).toBeInTheDocument(); // Ensures the sort icon is rendered
 });
 
 
