@@ -10,7 +10,8 @@
     table-layout: auto; /* Ensure auto layout for proper resizing */
 }
 
-.resizable-table th, .resizable-table td {
+.resizable-table th,
+.resizable-table td {
     resize: horizontal; /* Allow resizing */
     overflow: auto;
 }

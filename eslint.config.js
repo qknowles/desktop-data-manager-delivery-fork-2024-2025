@@ -16,7 +16,10 @@ export default [
                 },
             },
             globals: {
-                ...globals.browser,
+                ...Object.keys(globals.browser).reduce((acc, key) => {
+                    acc[key.trim()] = globals.browser[key]; // Trim whitespace from keys
+                    return acc;
+                }, {}),
             },
         },
         plugins: {
