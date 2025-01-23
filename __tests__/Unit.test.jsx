@@ -162,24 +162,25 @@ test('calls onClick when Tab is clicked', () => {
   expect(handleClick).toHaveBeenCalled();
 });
 
-
 //TableHeading Tests
-test('renders TableHeading with label and sort icon', () => {
+test('handles onClick event correctly', () => {
+  const handleClick = jest.fn();
   render(
-      <table>
-          <thead>
-              <tr>
-                  <TableHeading label="Name" active sortDirection="asc" onClick={() => {}} />
-              </tr>
-          </thead>
-      </table>
+    <table>
+      <thead>
+        <tr>
+          <th>
+            <TableHeading label="Name" active sortDirection="asc" onClick={handleClick} />
+          </th>
+        </tr>
+      </thead>
+    </table>
   );
 
-  // Assertions
-  expect(screen.getByText('Name')).toBeInTheDocument();
-  expect(document.querySelector('svg')).toBeInTheDocument(); // Ensures the sort icon is rendered
+  // Simulate click
+  fireEvent.click(screen.getByText('Name'));
+  expect(handleClick).toHaveBeenCalledTimes(1);
 });
-
 
 //TopNav tests:
 test('renders TopNav with title and user controls', () => {

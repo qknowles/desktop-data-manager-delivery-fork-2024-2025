@@ -62,7 +62,7 @@ export const usePagination = (updateEntries) => {
         const batch = await getBatch(startAfter(lastVisibleDoc));
         const docs = batch.docs || [];
         if (docs.length > 0) {
-            setQueryCursorStack(prev => [...prev, lastVisibleDoc]);
+            setQueryCursorStack((prev) => [...prev, lastVisibleDoc]);
             setLastVisibleDoc(docs[docs.length - 1]);
             updateEntries(docs);
         }
