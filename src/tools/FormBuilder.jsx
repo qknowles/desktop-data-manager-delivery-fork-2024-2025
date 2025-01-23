@@ -48,6 +48,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [existingArrays, setExistingArrays] = useState([]);
     const [message, setMessage] = useState('');
     const [showExistingArrays, setShowExistingArrays] = useState(false);
+    const [messageSite, setMessageSite] = useState('');
 
 
     const [newPrimary, setNewPrimary] = useState('');
@@ -59,7 +60,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [newPrimaryValue, setNewPrimaryValue] = useState(''); 
     const [successMessage, setSuccessMessage] = useState('');
     const [messageBox, setMessageBox] = useState({ show: false, text: '' });
-    const [selectedSite, setSelectedSite] = useState(''); // State to store the selected site
+    const [selectedSite, setSelectedSite] = useState(''); 
     const [showConfirmationBox, setShowConfirmationBox] = useState(false);
     const [deletionDetails, setDeletionDetails] = useState({
        project: '',
@@ -108,7 +109,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
 
             querySnapshot.forEach((docSnapshot) => {
                 const docData = docSnapshot.data();
-                tempDocuments.push({ ...docData, docId: docSnapshot.id }); // Store full documents for modifying
+                tempDocuments.push({ ...docData, docId: docSnapshot.id }); 
                 if (docData.set_name && docData.set_name.endsWith("Array")) {
                     tempArrayOptions.push({
                         name: docData.set_name,
@@ -117,8 +118,8 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
                 }
             });
 
-            setDocuments(tempDocuments); // Store fetched documents
-            setArrayOptions(tempArrayOptions); // Store array options for dropdown
+            setDocuments(tempDocuments); 
+            setArrayOptions(tempArrayOptions); 
             console.log('Fetched Documents:', tempDocuments);
             console.log('Array Options for Dropdown:', tempArrayOptions);
         } catch (error) {
@@ -127,14 +128,14 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
 
     const handleArraySelection = async (e) => {
-        const arrayName = e.target.value; // Selected array name
+        const arrayName = e.target.value; 
         setSelectedArray(arrayName);
-        setPrimaryFields([]); // Clear previous primary fields
-        setSelectedField(null); // Clear previously selected field
+        setPrimaryFields([]); 
+        setSelectedField(null); 
     
         if (arrayName) {
             try {
-                // Find the selected array's document in Firestore
+                
                 const selected = arrayOptions.find(array => array.name === arrayName);
                 if (selected && selected.docId) {
                     const docRef = doc(db, 'AnswerSet', selected.docId);
@@ -142,8 +143,8 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     
                     if (docSnapshot.exists()) {
                         const answers = docSnapshot.data().answers || [];
-                        const primaryFields = answers.map(field => field.primary); // Extract primary fields
-                        setPrimaryFields(primaryFields); // Set primary fields as options
+                        const primaryFields = answers.map(field => field.primary); 
+                        setPrimaryFields(primaryFields); 
                     } else {
                         console.error('Document does not exist.');
                     }
@@ -156,10 +157,10 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     
     const handleDeleteArrayClick = async () => {
         if (arrayOptions.length === 0) {
-            await fetchDocuments(); // Ensure arrays are loaded
+            await fetchDocuments(); 
         }
-        setShowDeleteConfirm(true); // Open delete confirmation modal
-        setDeleteMode(''); // Reset the delete mode
+        setShowDeleteConfirm(true); 
+        setDeleteMode('');
     };
     const confirmDeleteArray = async () => {
         console.log('Selected values:', {
@@ -174,22 +175,21 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         }
     
         try {
-            // Construct set_name based on selected project and site
+          
             const arraySetName = `${selectedProject}${selectedSite}Array`;
     
-            // Query Firestore for the matching document
+           
             const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
             const querySnapshot = await getDocs(q);
     
             if (!querySnapshot.empty) {
-                const docSnapshot = querySnapshot.docs[0]; // Assuming only one document matches
-                const docRef = doc(db, 'AnswerSet', docSnapshot.id); // Reference to the Firestore document
+                const docSnapshot = querySnapshot.docs[0]; 
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id); 
                 const data = docSnapshot.data();
-    
-                // Filter out the selected array from the answers field
+
                 const updatedAnswers = data.answers.filter((entry) => entry.primary !== selectedArray);
     
-                // Update the Firestore document
+    
                 await updateDoc(docRef, { answers: updatedAnswers });
     
                 // Update UI
@@ -211,27 +211,27 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     
     
     const fetchArraysForSite = async (projectName, siteName) => {
-        const arraySetName = `${projectName}${siteName}Array`; // Construct set_name format
+        const arraySetName = `${projectName}${siteName}Array`; 
     
         try {
             const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
             const querySnapshot = await getDocs(q);
     
             if (!querySnapshot.empty) {
-                const docSnapshot = querySnapshot.docs[0]; // Assuming only one document matches
+                const docSnapshot = querySnapshot.docs[0];
                 const data = docSnapshot.data();
     
-                // Extract `primary` fields from the answers array
+                
                 const primaryValues = (data.answers || []).map(answer => answer.primary);
                 setPrimaryFields(primaryValues); // Update primary fields
-                console.log('Primary Values:', primaryValues); // Log fetched primary fields
+                console.log('Primary Values:', primaryValues); 
             } else {
                 console.error(`No document found for set_name: ${arraySetName}`);
-                setPrimaryFields([]); // Clear options if no document matches
+                setPrimaryFields([]); // Clear options 
             }
         } catch (error) {
             console.error(`Error fetching arrays for site ${siteName}:`, error);
-            setPrimaryFields([]); // Handle errors by clearing the dropdown
+            setPrimaryFields([]); 
         }
     };
     
@@ -375,14 +375,14 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         }
     
         try {
-            // Join secondary keys into a single string separated by commas
+            
             const secondaryKeysString = secondaryKeys.join(', ');
     
             await addDoc(collection(db, 'AnswerSet'), {
                 set_name: newArrayName,
                 answers: primaryValues.map((value) => ({ primary: value })),
                 secondary_keys: secondaryKeysString, // Store as a string
-                date_modified: Date.now(), // Include date_modified
+                date_modified: Date.now(), 
             });
     
             setMessageBox({ show: true, text: 'Array added successfully.' });
@@ -672,39 +672,46 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
     
     
-
-    const addNewSite = async () => {
-        if (selectedProject && newSiteName.trim()) {
-            try {
-                const projectSetName = `${selectedProject}Sites`; // Construct the document identifier
-    
-                // Query to find the specific document in the AnswerSet collection
-                const q = query(collection(db, 'AnswerSet'), where('set_name', '==', projectSetName));
-                const querySnapshot = await getDocs(q);
-    
-                if (!querySnapshot.empty) {
-                    const docSnapshot = querySnapshot.docs[0]; // Get the first matching document
-                    const docRef = doc(db, 'AnswerSet', docSnapshot.id); // Reference to the correct document
-    
-                    // Update the `answers` field with the new site name
-                    await updateDoc(docRef, {
-                        answers: [...docSnapshot.data().answers, { primary: newSiteName }]
-                    });
-    
-                    console.log(`Site "${newSiteName}" added to ${projectSetName} successfully.`);
-                    setNewSiteName(''); // Clear input field
-                    fetchSitesForProject(selectedProject); // Refresh site list to include the new site
-                } else {
-                    console.error(`Document with set_name ${projectSetName} does not exist in the AnswerSet collection.`);
-                }
-            } catch (error) {
-                console.error(`Error adding new site to ${selectedProject}:`, error);
-                alert('Failed to add the site.');
-            }
-        } else {
-            alert("Please select a project and enter a site name.");
+const addNewSite = async () => {
+    if (selectedProject && newSiteName.trim()) {
+        if (siteOptions.includes(newSiteName.trim())) {
+            setMessageSite('This site already exists. Please choose a different name.');
+            return;
         }
-    };
+
+        try {
+            const projectSetName = `${selectedProject}Sites`; // Construct the document identifier
+
+            // Query to find the specific document in the AnswerSet collection
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', projectSetName));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0]; // Get the first matching document
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id); // Reference to the correct document
+
+                // Update the `answers` field with the new site name
+                await updateDoc(docRef, {
+                    answers: [...docSnapshot.data().answers, { primary: newSiteName.trim() }]
+                });
+
+                setMessageSite('New site added successfully!');
+                setNewSiteName(''); // Clear input field
+                fetchSitesForProject(selectedProject); // Refresh site list to include the new site
+            } else {
+                setMessageSite(`Document with set_name ${projectSetName} does not exist.`);
+            }
+        } catch (error) {
+            console.error(`Error adding new site to ${selectedProject}:`, error);
+            setMessageSite('Failed to add the site.');
+        }
+    } else {
+        setMessageSite("Please select a project and enter a site name.");
+    }
+};
+
+    
+    
     
     const addNewSpecies = async () => {
         if (selectedProject && selectedCritter && newPrimary.trim() && newGenus.trim() && newSpecies.trim()) {
@@ -958,6 +965,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         </div>
     </div>
 )}
+
             {/* View Sites Modal */}
             {showViewSites && (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1046,28 +1054,45 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
             <h2 className="text-xl font-bold mb-4">Enter New Site</h2>
+            
             <input
                 type="text"
                 value={newSiteName}
-                onChange={(e) => setNewSiteName(e.target.value)}
+                onChange={(e) => {
+                    setNewSiteName(e.target.value);
+                    setMessageSite(''); // Clear message on input change
+                }}
                 className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
                 placeholder="Enter site name"
             />
+
+            {/* Conditionally display the message */}
+            {messageSite && (
+                <p className="text-red-500 text-sm mb-4 text-center">{messageSite}</p>
+            )}
+
             <div className="flex justify-end space-x-2">
                 <Button
-                    onClick={() => setShowAddSiteForm(false)}
+                    onClick={() => {
+                        setShowAddSiteForm(false);
+                        setMessageSite(''); // Clear message on cancel
+                    }}
                     text="Cancel"
                     className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center"
                 />
                 <Button
                     onClick={async () => {
                         if (newSiteName.trim()) {
+                            if (siteOptions.includes(newSiteName.trim())) {
+                                setMessageSite('This site already exists. Please choose a different name.');
+                                return;
+                            }
                             await addNewSite(); // Call the addNewSite function here
                             setNewSiteName(''); // Clear input field
                             setShowAddSiteForm(false);
                             setShowAddSiteModal(false);
                         } else {
-                            alert("Please enter a site name.");
+                            setMessageSite('Please enter a site name.');
                         }
                     }}
                     text="Add Site"
