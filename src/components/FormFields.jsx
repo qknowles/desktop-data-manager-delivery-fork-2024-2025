@@ -625,7 +625,7 @@ const ToeClipCodeField = ({
             setButtonText('Generate');
         setToeCode('');
         setToeCodeIsValid(undefined);
-    }, [recapture]);
+    }, [recapture, speciesCode]);
 
     const generateNewToeCode = async () => {
         if (toeCode === undefined)
