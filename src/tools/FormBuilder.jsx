@@ -170,43 +170,40 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         });
     
         if (!selectedProject || !selectedSite || !selectedArray) {
-            alert('Please select a project, site, and array.');
+            setMessageBox({ show: true, text: 'Please select a project, site, and array.' });
             return;
         }
     
         try {
-          
             const arraySetName = `${selectedProject}${selectedSite}Array`;
     
-           
             const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
             const querySnapshot = await getDocs(q);
     
             if (!querySnapshot.empty) {
-                const docSnapshot = querySnapshot.docs[0]; 
-                const docRef = doc(db, 'AnswerSet', docSnapshot.id); 
+                const docSnapshot = querySnapshot.docs[0];
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id);
                 const data = docSnapshot.data();
-
-                const updatedAnswers = data.answers.filter((entry) => entry.primary !== selectedArray);
     
+                const updatedAnswers = data.answers.filter((entry) => entry.primary !== selectedArray);
     
                 await updateDoc(docRef, { answers: updatedAnswers });
     
                 // Update UI
                 setPrimaryFields(updatedAnswers.map((entry) => entry.primary));
                 setSelectedArray(null);
-                alert(`Array "${selectedArray}" deleted successfully.`);
+                setMessageBox({ show: true, text: `Array "${selectedArray}" deleted successfully.` });
             } else {
                 console.error(`No document found for set_name: ${arraySetName}`);
+                setMessageBox({ show: true, text: `No document found for ${arraySetName}` });
             }
         } catch (error) {
             console.error('Error deleting array:', error);
-            alert('Failed to delete the array.');
+            setMessageBox({ show: true, text: 'Failed to delete the array. Please try again.' });
         } finally {
             setShowDeleteConfirm(false);
         }
     };
-    
     
     
     
@@ -672,88 +669,124 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
     
     
-const addNewSite = async () => {
-    if (selectedProject && newSiteName.trim()) {
-        if (siteOptions.includes(newSiteName.trim())) {
-            setMessageSite('This site already exists. Please choose a different name.');
-            return;
+    const addNewSite = async () => {
+        if (selectedProject && newSiteName.trim()) {
+            if (siteOptions.includes(newSiteName.trim())) {
+                setMessageBox({ show: true, text: 'This site already exists. Please choose a different name.' });
+                return;
+            }
+    
+            try {
+                const projectSetName = `${selectedProject}Sites`; // Construct the document identifier
+    
+                // Query to find the specific document in the AnswerSet collection
+                const q = query(collection(db, 'AnswerSet'), where('set_name', '==', projectSetName));
+                const querySnapshot = await getDocs(q);
+    
+                if (!querySnapshot.empty) {
+                    const docSnapshot = querySnapshot.docs[0]; // Get the first matching document
+                    const docRef = doc(db, 'AnswerSet', docSnapshot.id); // Reference to the correct document
+    
+                    // Update the `answers` field with the new site name
+                    await updateDoc(docRef, {
+                        answers: [...docSnapshot.data().answers, { primary: newSiteName.trim() }]
+                    });
+    
+                    setMessageBox({ show: true, text: 'New site added successfully!' });
+                    setNewSiteName(''); // Clear input field
+                    fetchSitesForProject(selectedProject); // Refresh site list to include the new site
+                } else {
+                    setMessageBox({ show: true, text: `Document with set_name ${projectSetName} does not exist.` });
+                }
+            } catch (error) {
+                console.error(`Error adding new site to ${selectedProject}:`, error);
+                setMessageBox({ show: true, text: 'Failed to add the site. Please try again.' });
+            }
+        } else {
+            setMessageBox({ show: true, text: "Please select a project and enter a site name." });
         }
+    };
+    
 
+    
+    
+    
+const addNewSpecies = async () => {
+    if (selectedProject && selectedCritter && newPrimary.trim() && newGenus.trim() && newSpecies.trim()) {
         try {
-            const projectSetName = `${selectedProject}Sites`; // Construct the document identifier
-
-            // Query to find the specific document in the AnswerSet collection
+            const projectSetName = `${selectedProject}${selectedCritter}Species`;
             const q = query(collection(db, 'AnswerSet'), where('set_name', '==', projectSetName));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
-                const docSnapshot = querySnapshot.docs[0]; // Get the first matching document
-                const docRef = doc(db, 'AnswerSet', docSnapshot.id); // Reference to the correct document
+                const docSnapshot = querySnapshot.docs[0];
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id);
+                const existingSpecies = docSnapshot.data().answers || [];
 
-                // Update the `answers` field with the new site name
+                // Convert inputs to lowercase for case-insensitive comparison
+                const enteredGenus = newGenus.trim().toLowerCase();
+                const enteredSpecies = newSpecies.trim().toLowerCase();
+                const enteredCode = newPrimary.trim().toUpperCase();
+
+                // Check if the genus-species combination already exists
+                const isDuplicateCombo = existingSpecies.some(entry => 
+                    entry.secondary?.Genus?.toLowerCase() === enteredGenus && 
+                    entry.secondary?.Species?.toLowerCase() === enteredSpecies
+                );
+
+                // Check if the 4-letter code already exists
+                const isDuplicateCode = existingSpecies.some(entry => 
+                    entry.primary.toUpperCase() === enteredCode
+                );
+
+                // Prioritize the message for duplicate 4-letter code
+                if (isDuplicateCode) {
+                    setMessageBox({ show: true, text: 'The entered 4-letter code already exists. Please use a different code.' });
+                    return;
+                }
+
+                // Show genus-species combination message only if the code doesn't exist
+                if (isDuplicateCombo) {
+                    setMessageBox({ show: true, text: 'This Genus-Species combination already exists. Please enter a unique pair.' });
+                    return;
+                }
+
+                // Proceed to add new species if both checks pass
+                const newEntry = {
+                    primary: enteredCode,
+                    secondary: {
+                        Genus: newGenus.trim(),
+                        Species: newSpecies.trim(),
+                    }
+                };
+
                 await updateDoc(docRef, {
-                    answers: [...docSnapshot.data().answers, { primary: newSiteName.trim() }]
+                    answers: [...existingSpecies, newEntry]
                 });
 
-                setMessageSite('New site added successfully!');
-                setNewSiteName(''); // Clear input field
-                fetchSitesForProject(selectedProject); // Refresh site list to include the new site
+                console.log(`Species "${newPrimary}" added to ${projectSetName} successfully.`);
+                setMessageBox({ show: true, text: 'Species added successfully!' });
+
+                // Reset input fields
+                setNewPrimary('');
+                setNewGenus('');
+                setNewSpecies('');
+                setShowAddSpeciesForm(false);
+                setShowAddSpeciesModal(false);
+                triggerRerender();
             } else {
-                setMessageSite(`Document with set_name ${projectSetName} does not exist.`);
+                setMessageBox({ show: true, text: `Document for ${projectSetName} does not exist.` });
             }
         } catch (error) {
-            console.error(`Error adding new site to ${selectedProject}:`, error);
-            setMessageSite('Failed to add the site.');
+            console.error(`Error adding new species to ${selectedProject}:`, error);
+            setMessageBox({ show: true, text: 'Failed to add the species.' });
         }
     } else {
-        setMessageSite("Please select a project and enter a site name.");
+        setMessageBox({ show: true, text: 'Please select a project, taxa, and enter all species details.' });
     }
 };
 
-    
-    
-    
-    const addNewSpecies = async () => {
-        if (selectedProject && selectedCritter && newPrimary.trim() && newGenus.trim() && newSpecies.trim()) {
-            try {
-                const projectSetName = `${selectedProject}${selectedCritter}Species`;
-                const q = query(collection(db, 'AnswerSet'), where('set_name', '==', projectSetName));
-                const querySnapshot = await getDocs(q);
-                
-                if (!querySnapshot.empty) {
-                    const docSnapshot = querySnapshot.docs[0];
-                    const docRef = doc(db, 'AnswerSet', docSnapshot.id);
 
-                    const newEntry = {
-                        primary: newPrimary,
-                        secondary: {
-                            Genus: newGenus,
-                            Species: newSpecies,
-                        }
-                    };
-
-                    await updateDoc(docRef, {
-                        answers: [...docSnapshot.data().answers, newEntry]
-                    });
-
-                    console.log(`Species "${newPrimary}" added to ${projectSetName} successfully.`);
-                    setNewPrimary('');
-                    setNewGenus('');
-                    setNewSpecies('');
-                    setShowAddSpeciesForm(false);
-                    setShowAddSpeciesModal(false);
-                    triggerRerender();
-                } else {
-                    console.error(`Document with set_name ${projectSetName} does not exist in the AnswerSet collection.`);
-                }
-            } catch (error) {
-                console.error(`Error adding new species to ${selectedProject}:`, error);
-                alert('Failed to add the species.');
-            }
-        } else {
-            alert("Please select a project, critter, and enter all species details.");
-        }
-    };
     
     const addSiteToProjectDocument = async (project, siteName) => {
         const projectDocument = `${project}Sites`;
@@ -793,12 +826,12 @@ const addNewSite = async () => {
 
     const handleAddNewArray = async () => {
         if (!newArrayName.trim()) {
-            setMessage('Please enter an array name.');
+            setMessageBox({ show: true, text: 'Please enter an array name.' });
             return;
         }
     
-        if (existingArrays.includes(newArrayName)) {
-            setMessage('This array name already exists. Please choose a different name.');
+        if (existingArrays.includes(newArrayName.trim())) {
+            setMessageBox({ show: true, text: 'This array name already exists. Please choose a different name.' });
             return;
         }
     
@@ -812,21 +845,22 @@ const addNewSite = async () => {
                 const docRef = doc(db, 'AnswerSet', docSnapshot.id);
     
                 await updateDoc(docRef, {
-                    answers: [...docSnapshot.data().answers, { primary: newArrayName }],
+                    answers: [...docSnapshot.data().answers, { primary: newArrayName.trim() }],
                 });
     
-                setExistingArrays([...existingArrays, newArrayName]);
+                setExistingArrays([...existingArrays, newArrayName.trim()]);
                 setNewArrayName('');
-                setMessage('New array added successfully!');
+                setMessageBox({ show: true, text: 'Array added successfully!' });
                 setShowExistingArrays(true);
             } else {
-                setMessage(`No document found for ${arraySetName}`);
+                setMessageBox({ show: true, text: `No document found for ${arraySetName}` });
             }
         } catch (error) {
             console.error('Error adding new array:', error);
-            setMessage('Error adding array. Please try again.');
+            setMessageBox({ show: true, text: 'Error adding array. Please try again.' });
         }
     };
+    
     const renderModalContent = () => {
         switch (modalStep) {
             case 1:
@@ -1060,22 +1094,18 @@ const addNewSite = async () => {
                 value={newSiteName}
                 onChange={(e) => {
                     setNewSiteName(e.target.value);
-                    setMessageSite(''); // Clear message on input change
+                    setMessageBox({ show: false, text: '' }); // Clear message box on input change
                 }}
                 className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
                 placeholder="Enter site name"
             />
 
-            {/* Conditionally display the message */}
-            {messageSite && (
-                <p className="text-red-500 text-sm mb-4 text-center">{messageSite}</p>
-            )}
-
             <div className="flex justify-end space-x-2">
                 <Button
                     onClick={() => {
                         setShowAddSiteForm(false);
-                        setMessageSite(''); // Clear message on cancel
+                        setNewSiteName(''); // Clear input field on cancel
+                        setMessageBox({ show: false, text: '' });
                     }}
                     text="Cancel"
                     className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center"
@@ -1084,15 +1114,15 @@ const addNewSite = async () => {
                     onClick={async () => {
                         if (newSiteName.trim()) {
                             if (siteOptions.includes(newSiteName.trim())) {
-                                setMessageSite('This site already exists. Please choose a different name.');
+                                setMessageBox({ show: true, text: 'This site already exists. Please choose a different name.' });
                                 return;
                             }
-                            await addNewSite(); // Call the addNewSite function here
-                            setNewSiteName(''); // Clear input field
+                            await addNewSite();
+                            setNewSiteName('');
                             setShowAddSiteForm(false);
                             setShowAddSiteModal(false);
                         } else {
-                            setMessageSite('Please enter a site name.');
+                            setMessageBox({ show: true, text: 'Please enter a site name.' });
                         }
                     }}
                     text="Add Site"
@@ -1193,6 +1223,19 @@ const addNewSite = async () => {
                     </div>
                 </div>
             )}
+            {messageBox.show && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg text-center">
+            <p className="text-lg font-medium text-gray-900 dark:text-white mb-4">{messageBox.text}</p>
+            <button
+                onClick={() => setMessageBox({ show: false, text: '' })}
+                className="bg-asu-maroon text-white px-4 py-2 border border-white rounded hover:bg-maroon-700"
+            >
+                OK
+            </button>
+        </div>
+    </div>
+)}
 
 {showAddArrayModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
