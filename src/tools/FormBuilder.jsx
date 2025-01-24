@@ -45,6 +45,11 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [speciesOptions, setSpeciesOptions] = useState([]);
     const [showAddSpeciesForm, setShowAddSpeciesForm] = useState(false);
     const [selectedCritter, setSelectedCritter] = useState('');
+    const [existingArrays, setExistingArrays] = useState([]);
+    const [message, setMessage] = useState('');
+    const [showExistingArrays, setShowExistingArrays] = useState(false);
+    const [messageSite, setMessageSite] = useState('');
+
 
     const [newPrimary, setNewPrimary] = useState('');
     const [newGenus, setNewGenus] = useState('');
@@ -55,6 +60,14 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [newPrimaryValue, setNewPrimaryValue] = useState(''); 
     const [successMessage, setSuccessMessage] = useState('');
     const [messageBox, setMessageBox] = useState({ show: false, text: '' });
+    const [selectedSite, setSelectedSite] = useState(''); 
+    const [showConfirmationBox, setShowConfirmationBox] = useState(false);
+    const [deletionDetails, setDeletionDetails] = useState({
+       project: '',
+       site: '',
+       array: '',
+    });
+
 
 
 
@@ -96,7 +109,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
 
             querySnapshot.forEach((docSnapshot) => {
                 const docData = docSnapshot.data();
-                tempDocuments.push({ ...docData, docId: docSnapshot.id }); // Store full documents for modifying
+                tempDocuments.push({ ...docData, docId: docSnapshot.id }); 
                 if (docData.set_name && docData.set_name.endsWith("Array")) {
                     tempArrayOptions.push({
                         name: docData.set_name,
@@ -105,8 +118,8 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
                 }
             });
 
-            setDocuments(tempDocuments); // Store fetched documents
-            setArrayOptions(tempArrayOptions); // Store array options for dropdown
+            setDocuments(tempDocuments); 
+            setArrayOptions(tempArrayOptions); 
             console.log('Fetched Documents:', tempDocuments);
             console.log('Array Options for Dropdown:', tempArrayOptions);
         } catch (error) {
@@ -115,60 +128,111 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
 
     const handleArraySelection = async (e) => {
-        const arrayName = e.target.value;
-        const selected = arrayOptions.find(array => array.name === arrayName);
-        setSelectedArray(selected);
-        setPrimaryFields([]);
-        setSelectedField(null);
-
-        if (selected && selected.docId && deleteMode === 'field') {
+        const arrayName = e.target.value; 
+        setSelectedArray(arrayName);
+        setPrimaryFields([]); 
+        setSelectedField(null); 
+    
+        if (arrayName) {
             try {
-                const docRef = doc(db, 'AnswerSet', selected.docId);
-                const docSnapshot = await getDoc(docRef);
-
-                if (docSnapshot.exists()) {
-                    const answers = docSnapshot.data().answers || [];
-                    const primaryFields = answers.map(field => field.primary).filter(Boolean);
-                    setPrimaryFields(primaryFields);
-                    console.log("Primary fields:", primaryFields);
+                
+                const selected = arrayOptions.find(array => array.name === arrayName);
+                if (selected && selected.docId) {
+                    const docRef = doc(db, 'AnswerSet', selected.docId);
+                    const docSnapshot = await getDoc(docRef);
+    
+                    if (docSnapshot.exists()) {
+                        const answers = docSnapshot.data().answers || [];
+                        const primaryFields = answers.map(field => field.primary); 
+                        setPrimaryFields(primaryFields); 
+                    } else {
+                        console.error('Document does not exist.');
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching primary fields:', error);
             }
         }
     };
-
+    
     const handleDeleteArrayClick = async () => {
         if (arrayOptions.length === 0) {
-            await fetchDocuments(); // Ensure arrays are loaded
+            await fetchDocuments(); 
         }
-        setShowDeleteConfirm(true); // Open delete confirmation modal
-        setDeleteMode(''); // Reset the delete mode
+        setShowDeleteConfirm(true); 
+        setDeleteMode('');
     };
-    
     const confirmDeleteArray = async () => {
-        if (selectedArray) {
-            const { docId, name } = selectedArray;
+        console.log('Selected values:', {
+            selectedProject,
+            selectedSite,
+            selectedArray,
+        });
     
-            try {
-                const docRef = doc(db, 'AnswerSet', docId);
-                await deleteDoc(docRef);
+        if (!selectedProject || !selectedSite || !selectedArray) {
+            setMessageBox({ show: true, text: 'Please select a project, site, and array.' });
+            return;
+        }
     
-                setArrayOptions((prevArrayOptions) =>
-                    prevArrayOptions.filter((array) => array.docId !== docId)
-                );
+        try {
+            const arraySetName = `${selectedProject}${selectedSite}Array`;
     
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0];
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id);
+                const data = docSnapshot.data();
+    
+                const updatedAnswers = data.answers.filter((entry) => entry.primary !== selectedArray);
+    
+                await updateDoc(docRef, { answers: updatedAnswers });
+    
+                // Update UI
+                setPrimaryFields(updatedAnswers.map((entry) => entry.primary));
                 setSelectedArray(null);
-                triggerRerender();
-                setMessageBox({ show: true, text: ` ${name} deleted successfully.` });
-            } catch (error) {
-                console.error('Error deleting document:', error);
-                setMessageBox({ show: true, text: 'Failed to delete the document.' });
-            } finally {
-                setShowDeleteConfirm(false);
+                setMessageBox({ show: true, text: `Array "${selectedArray}" deleted successfully.` });
+            } else {
+                console.error(`No document found for set_name: ${arraySetName}`);
+                setMessageBox({ show: true, text: `No document found for ${arraySetName}` });
             }
+        } catch (error) {
+            console.error('Error deleting array:', error);
+            setMessageBox({ show: true, text: 'Failed to delete the array. Please try again.' });
+        } finally {
+            setShowDeleteConfirm(false);
         }
     };
+    
+    
+    
+    const fetchArraysForSite = async (projectName, siteName) => {
+        const arraySetName = `${projectName}${siteName}Array`; 
+    
+        try {
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0];
+                const data = docSnapshot.data();
+    
+                
+                const primaryValues = (data.answers || []).map(answer => answer.primary);
+                setPrimaryFields(primaryValues); // Update primary fields
+                console.log('Primary Values:', primaryValues); 
+            } else {
+                console.error(`No document found for set_name: ${arraySetName}`);
+                setPrimaryFields([]); // Clear options 
+            }
+        } catch (error) {
+            console.error(`Error fetching arrays for site ${siteName}:`, error);
+            setPrimaryFields([]); 
+        }
+    };
+    
+    
     
     
 
@@ -178,91 +242,114 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             <div className="bg-white dark:bg-neutral-900 dark:text-white p-6 rounded-lg shadow-lg w-80">
                 <h2 className="text-xl font-bold mb-4">Delete Options</h2>
                 <p className="text-sm text-gray-600 dark:text-neutral-400 mb-4 text-center">
-                        Delete entire array will allow you to delete the array document in its entirety and delete array field will let you delete a primary field from your array of choice.
-                    </p>
-                <div className="flex flex-col mb-4">
-                    <Button 
-                        onClick={() => setDeleteMode('array')}
-                        text="Delete Entire Array"
-                        className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center w-full mb-2"
-                    />
-                    <Button 
-                        onClick={() => setDeleteMode('field')}
-                        text="Delete Array Field"
-                        className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center w-full"
-                    />
-                </div>
+                    Select a project and site to delete the associated array.
+                </p>
+    
+                {/* Project Dropdown */}
+                <label className="block mb-2 font-medium">Select Project:</label>
+                <select
+                    value={selectedProject}
+                    onChange={(e) => {
+                        handleProjectSelection(e.target.value);
+                        setSelectedProject(e.target.value);
+                        console.log("Project Selected:", e.target.value);
+                    }}
+                    
+                    
+                    className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                >
+                    <option value="">Select a Project</option>
+                    <option value="Gateway">Gateway</option>
+                    <option value="San Pedro">San Pedro</option>
+                    <option value="Virgin River">Virgin River</option>
+                </select>
+    
+                {/* Conditional Site Dropdown */}
+{selectedProject && (
+    <>
+        <label className="block mb-2 font-medium">Select Site:</label>
+        <select
+            value={selectedSite}
+            onChange={(e) => handleSiteSelection(e.target.value)} // Use handleSiteSelection here
+            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+        >
+            <option value="">Select a Site</option>
+            {siteOptions.map((site, index) => (
+                <option key={index} value={site}>
+                    {site}
+                </option>
+            ))}
+        </select>
+    </>
+)}
 
-                {deleteMode && (
-                    <>
-                        <select
-                            className="mb-4 p-2 border rounded w-full"
-                            value={selectedArray ? selectedArray.name : ""}
-                            onChange={handleArraySelection}
-                        >
-                            <option value="" disabled>Select an array</option>
-                            {arrayOptions.map((array, index) => (
-                                <option key={index} value={array.name}>
-                                    {array.name}
-                                </option>
-                            ))}
-                        </select>
-                    </>
-                )}
+               {/* Array Dropdown */}
+               {selectedSite&& (
+    <>
+    {primaryFields.length > 0 ? (
+    <>
+        <label className="block mb-2 font-medium">Select an Array to delete:</label>
+        <select
+            value={selectedArray || ''}
+            onChange={(e) => setSelectedArray(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+        >
+            <option value=""></option>
+            {primaryFields.map((field, index) => (
+                <option key={index} value={field}>
+                    {field}
+                </option>
+            ))}
+        </select>
+    </>
+) : (
+    <p>No Arrays Available</p>
+)}
 
-                {deleteMode === 'field' && primaryFields.length > 0 && (
-                    <select
-                        className="mb-4 p-2 border rounded w-full"
-                        value={selectedField || ""}
-                        onChange={(e) => setSelectedField(e.target.value)}
-                    >
-                        <option value="" disabled>Select a primary field</option>
-                        {primaryFields.map((field, index) => (
-                            <option key={index} value={field}>{field}</option>
-                        ))}
-                    </select>
-                )}
+       
+    </>
+)}
 
+
+
+    
+                {/* Delete Button */}
                 <div className="flex justify-end space-x-2">
+                <Button
+    onClick={() => {
+        setShowDeleteConfirm(false);
+        setSelectedProject('');
+        setSelectedSite('');
+        setSelectedArray('');
+    }}
+    text="Cancel"
+    className="bg-red text-white px-4 py-2 rounded"
+/>
                     <Button
-                        onClick={() => {
-                            setShowDeleteConfirm(false);
-                            setDeleteMode('');
-                        }}
-                        text="Cancel"
-                        className="bg-red text-white px-4 py-2 rounded mb-2"
+                        onClick={confirmDeleteArray}
+                        text="Delete Array"
+                        className="bg-red text-white px-6 py-3 rounded w-full"
+                        disabled={!selectedProject || !selectedSite || !selectedArray}
                     />
-                    {deleteMode === 'array' ? (
-                        <Button
-                            onClick={confirmDeleteArray}
-                            text="Delete Array"
-                            className="bg-red text-white px-6 py-3 rounded w-full"
-                            disabled={!selectedArray}
-                        />
-                    ) : (
-                        <Button 
-                            onClick={confirmDeletePrimaryField}
-                            text="Delete Field"
-                            className="bg-red text-white px-6 py-3 rounded w-full"
-                            disabled={!selectedField}
-                        />
-                    )}
                 </div>
             </div>
         </div>
     );
+    
+    const handleSiteSelection = (siteName) => {
+        setSelectedSite(siteName);
+        if (selectedProject && siteName) {
+            fetchArraysForSite(selectedProject, siteName);
+        }
+    };
+    
+   
+    
 
     const handleAddArrayClick = () => {
         setShowAddArrayModal(true);
     };
     
-
-    const handleAddPrimaryValue = () => {
-        if (newPrimaryValue.trim() !== '') {
-            setPrimaryValues([...primaryValues, newPrimaryValue.trim()]);
-            setNewPrimaryValue('');
-        }
-    };
     
     const handleAddSecondaryKeyArray = () => {
         if (newSecondaryKey.trim() !== '') {
@@ -270,38 +357,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             setNewSecondaryKey('');
         }
     };
-
-    const handleSubmitNewArray = async () => {
-        if (newArrayName.trim() === '' || primaryValues.length === 0) {
-            setMessageBox({ show: true, text: 'Please provide an array name and at least one primary value.' });
-            return;
-        }
-    
-        try {
-            // Join secondary keys into a single string separated by commas
-            const secondaryKeysString = secondaryKeys.join(', ');
-    
-            await addDoc(collection(db, 'AnswerSet'), {
-                set_name: newArrayName,
-                answers: primaryValues.map((value) => ({ primary: value })),
-                secondary_keys: secondaryKeysString, // Store as a string
-                date_modified: Date.now(), // Include date_modified
-            });
-    
-            setMessageBox({ show: true, text: 'Array added successfully.' });
-            setNewArrayName('');
-            setPrimaryValues([]);
-            setSecondaryKeys([]);
-            setShowAddArrayModal(false);
-            triggerRerender(); // Refresh the UI
-        } catch (error) {
-            console.error('Error adding new array:', error);
-            setMessageBox({ show: true, text: 'Failed to add the array.' });
-        }
-    };    
-    
-    
-    
 
 
     const confirmDeletePrimaryField = async () => {
@@ -477,11 +532,74 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
 
     const handleSubmitNewDocument = async () => {
-        const docRef = collection(db, 'AnswerSet');
-        await addDoc(docRef, { set_name: newAnswerSetName, secondary_keys: secondaryKeys });
-        setShowNewDocumentModal(false);
-        triggerRerender();
+        if (newAnswerSetName.trim() === '' || primaryValues.length === 0) {
+            setMessageBox({ show: true, text: 'Please provide a document name and at least one primary value.' });
+            return;
+        }
+    
+        try {
+            // Prepare primary fields in the correct format
+            const primaryData = primaryValues.map(value => ({ primary: value }));
+    
+            await addDoc(collection(db, 'AnswerSet'), {
+                set_name: newAnswerSetName,
+                answers: primaryData,  // Store primary fields in answers
+                secondary_keys: secondaryKeys.join(', '), // Store secondary keys as a string
+                date_modified: Date.now(), 
+            });
+    
+            setMessageBox({ show: true, text: 'New document created successfully.' });
+    
+            // Reset form fields
+            setNewAnswerSetName('');
+            setPrimaryValues([]);
+            setSecondaryKeys([]);
+            setShowNewDocumentModal(false);
+            triggerRerender(); // Refresh the UI
+        } catch (error) {
+            console.error('Error adding new document:', error);
+            setMessageBox({ show: true, text: 'Failed to create the document.' });
+        }
     };
+
+    const handleSubmitNewArray = async () => {
+        if (newAnswerSetName.trim() === '' || primaryValues.length === 0) {
+            setMessageBox({ show: true, text: 'Please provide a document name and at least one primary value.' });
+            return;
+        }
+    
+        try {
+            // Check if the document name already exists
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', newAnswerSetName.trim()));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                setMessageBox({ show: true, text: `Document "${newAnswerSetName.trim()}" already exists. Please use a different name.` });
+                return;
+            }
+    
+            // Proceed with document creation if the name does not exist
+            await addDoc(collection(db, 'AnswerSet'), {
+                set_name: newAnswerSetName.trim(),
+                answers: primaryValues.map((value) => ({ primary: value })),  // Store as primary fields
+                date_modified: Date.now(),
+            });
+    
+            setMessageBox({ show: true, text: 'Document created successfully!' });
+    
+            // Reset form fields
+            setNewAnswerSetName('');
+            setPrimaryValues([]);
+            setShowNewDocumentModal(false);
+            triggerRerender();
+        } catch (error) {
+            console.error('Error adding new document:', error);
+            setMessageBox({ show: true, text: 'Failed to create the document. Please try again.' });
+        }
+    };
+    
+    
+    
 
     const handleAddSite = () => {
         setShowAddSiteModal(true); // Open the "Add Site" modal
@@ -574,9 +692,13 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
     
     
-
     const addNewSite = async () => {
         if (selectedProject && newSiteName.trim()) {
+            if (siteOptions.includes(newSiteName.trim())) {
+                setMessageBox({ show: true, text: 'This site already exists. Please choose a different name.' });
+                return;
+            }
+    
             try {
                 const projectSetName = `${selectedProject}Sites`; // Construct the document identifier
     
@@ -590,65 +712,110 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     
                     // Update the `answers` field with the new site name
                     await updateDoc(docRef, {
-                        answers: [...docSnapshot.data().answers, { primary: newSiteName }]
+                        answers: [...docSnapshot.data().answers, { primary: newSiteName.trim() }]
                     });
     
-                    console.log(`Site "${newSiteName}" added to ${projectSetName} successfully.`);
+                    setMessageBox({ show: true, text: 'New site added successfully!' });
                     setNewSiteName(''); // Clear input field
                     fetchSitesForProject(selectedProject); // Refresh site list to include the new site
                 } else {
-                    console.error(`Document with set_name ${projectSetName} does not exist in the AnswerSet collection.`);
+                    setMessageBox({ show: true, text: `Document with set_name ${projectSetName} does not exist.` });
                 }
             } catch (error) {
                 console.error(`Error adding new site to ${selectedProject}:`, error);
-                alert('Failed to add the site.');
+                setMessageBox({ show: true, text: 'Failed to add the site. Please try again.' });
             }
         } else {
-            alert("Please select a project and enter a site name.");
+            setMessageBox({ show: true, text: "Please select a project and enter a site name." });
         }
     };
     
-    const addNewSpecies = async () => {
-        if (selectedProject && selectedCritter && newPrimary.trim() && newGenus.trim() && newSpecies.trim()) {
-            try {
-                const projectSetName = `${selectedProject}${selectedCritter}Species`;
-                const q = query(collection(db, 'AnswerSet'), where('set_name', '==', projectSetName));
-                const querySnapshot = await getDocs(q);
-                
-                if (!querySnapshot.empty) {
-                    const docSnapshot = querySnapshot.docs[0];
-                    const docRef = doc(db, 'AnswerSet', docSnapshot.id);
 
-                    const newEntry = {
-                        primary: newPrimary,
-                        secondary: {
-                            Genus: newGenus,
-                            Species: newSpecies,
-                        }
-                    };
+    
+    
+    
+const addNewSpecies = async () => {
+    if (selectedProject && selectedCritter && newPrimary.trim() && newGenus.trim() && newSpecies.trim()) {
+        try {
+            const projectSetName = `${selectedProject}${selectedCritter}Species`;
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', projectSetName));
+            const querySnapshot = await getDocs(q);
 
-                    await updateDoc(docRef, {
-                        answers: [...docSnapshot.data().answers, newEntry]
-                    });
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0];
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id);
+                const existingSpecies = docSnapshot.data().answers || [];
 
-                    console.log(`Species "${newPrimary}" added to ${projectSetName} successfully.`);
-                    setNewPrimary('');
-                    setNewGenus('');
-                    setNewSpecies('');
-                    setShowAddSpeciesForm(false);
-                    setShowAddSpeciesModal(false);
-                    triggerRerender();
-                } else {
-                    console.error(`Document with set_name ${projectSetName} does not exist in the AnswerSet collection.`);
+                // Convert inputs to lowercase for case-insensitive comparison
+                const enteredGenus = newGenus.trim().toLowerCase();
+                const enteredSpecies = newSpecies.trim().toLowerCase();
+                const enteredCode = newPrimary.trim().toUpperCase();
+
+                // Check if the genus-species combination already exists
+                const isDuplicateCombo = existingSpecies.some(entry => 
+                    entry.secondary?.Genus?.toLowerCase() === enteredGenus && 
+                    entry.secondary?.Species?.toLowerCase() === enteredSpecies
+                );
+
+                // Check if the 4-letter code already exists
+                const isDuplicateCode = existingSpecies.some(entry => 
+                    entry.primary.toUpperCase() === enteredCode
+                );
+
+                // Prioritize the message for duplicate 4-letter code
+                if (isDuplicateCode) {
+                    setMessageBox({ show: true, text: 'The entered 4-letter code already exists. Please use a different code.' });
+                    return;
                 }
-            } catch (error) {
-                console.error(`Error adding new species to ${selectedProject}:`, error);
-                alert('Failed to add the species.');
+
+                // Show genus-species combination message only if the code doesn't exist
+                if (isDuplicateCombo) {
+                    setMessageBox({ show: true, text: 'This Genus-Species combination already exists. Please enter a unique pair.' });
+                    return;
+                }
+
+                // Proceed to add new species if both checks pass
+                const newEntry = {
+                    primary: enteredCode,
+                    secondary: {
+                        Genus: newGenus.trim(),
+                        Species: newSpecies.trim(),
+                    }
+                };
+
+                await updateDoc(docRef, {
+                    answers: [...existingSpecies, newEntry]
+                });
+
+                console.log(`Species "${newPrimary}" added to ${projectSetName} successfully.`);
+                setMessageBox({ show: true, text: 'Species added successfully!' });
+
+                // Reset input fields
+                setNewPrimary('');
+                setNewGenus('');
+                setNewSpecies('');
+                setShowAddSpeciesForm(false);
+                setShowAddSpeciesModal(false);
+                triggerRerender();
+            } else {
+                setMessageBox({ show: true, text: `Document for ${projectSetName} does not exist.` });
             }
-        } else {
-            alert("Please select a project, critter, and enter all species details.");
+        } catch (error) {
+            console.error(`Error adding new species to ${selectedProject}:`, error);
+            setMessageBox({ show: true, text: 'Failed to add the species.' });
         }
-    };
+    } else {
+        setMessageBox({ show: true, text: 'Please select a project, taxa, and enter all species details.' });
+    }
+};
+
+const handleAddPrimaryValue = () => {
+    if (newPrimaryValue.trim() !== '') {
+        setPrimaryValues([...primaryValues, newPrimaryValue.trim()]);
+        setNewPrimaryValue('');
+    }
+};
+
     
     const addSiteToProjectDocument = async (project, siteName) => {
         const projectDocument = `${project}Sites`;
@@ -657,6 +824,72 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         });
     };
 
+    const fetchExistingArrays = async () => {
+        if (!selectedProject || !selectedSite) {
+            setMessage('Please select both project and site.');
+            return;
+        }
+    
+        const arraySetName = `${selectedProject}${selectedSite}Array`;
+    
+        try {
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0];
+                const data = docSnapshot.data();
+                const primaryValues = data.answers.map(entry => entry.primary);
+                setExistingArrays(primaryValues);
+                setShowExistingArrays(true);
+                setMessage('');
+            } else {
+                setExistingArrays([]);
+                setMessage(`No existing arrays found for ${selectedProject} - ${selectedSite}`);
+            }
+        } catch (error) {
+            console.error('Error fetching existing arrays:', error);
+            setMessage('Error fetching existing arrays.');
+        }
+    };
+
+    const handleAddNewArray = async () => {
+        if (!newArrayName.trim()) {
+            setMessageBox({ show: true, text: 'Please enter an array name.' });
+            return;
+        }
+    
+        if (existingArrays.includes(newArrayName.trim())) {
+            setMessageBox({ show: true, text: 'This array name already exists. Please choose a different name.' });
+            return;
+        }
+    
+        try {
+            const arraySetName = `${selectedProject}${selectedSite}Array`;
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', arraySetName));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                const docSnapshot = querySnapshot.docs[0];
+                const docRef = doc(db, 'AnswerSet', docSnapshot.id);
+    
+                await updateDoc(docRef, {
+                    answers: [...docSnapshot.data().answers, { primary: newArrayName.trim() }],
+                });
+    
+                setExistingArrays([...existingArrays, newArrayName.trim()]);
+                setNewArrayName('');
+                setMessageBox({ show: true, text: 'Array added successfully!' });
+                setShowExistingArrays(true);
+            } else {
+                setMessageBox({ show: true, text: `No document found for ${arraySetName}` });
+            }
+        } catch (error) {
+            console.error('Error adding new array:', error);
+            setMessageBox({ show: true, text: 'Error adding array. Please try again.' });
+        }
+    };
+    
     const renderModalContent = () => {
         switch (modalStep) {
             case 1:
@@ -795,6 +1028,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         </div>
     </div>
 )}
+
             {/* View Sites Modal */}
             {showViewSites && (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -810,48 +1044,55 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     </div>
 )}
 
-            {/* New Document Modal */}
-            {showNewDocumentModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
-                        <h2 className="text-xl font-bold mb-4">Create New Document</h2>
-                        <label className="block mb-2 font-medium">Answer Set Name:</label>
-                        <input
-                            type="text"
-                            value={newAnswerSetName}
-                            onChange={(e) => setNewAnswerSetName(e.target.value)}
-                            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                            placeholder="Enter answer set name"
-                        />
-                        <label className="block mb-2 font-medium">Secondary Keys:</label>
-                        {secondaryKeys.map((key, index) => (
-                            <p key={index} className="ml-2 mb-2 text-gray-700">- {key}</p>
-                        ))}
-                        <input
-                            type="text"
-                            value={newSecondaryKey}
-                            onChange={(e) => setNewSecondaryKey(e.target.value)}
-                            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                            placeholder="Enter secondary key"
-                        />
-                        <Button 
-                            onClick={handleAddSecondaryKey} 
-                            text="Add Secondary Key" 
-                            className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
-                        />
-                        <Button 
-                            onClick={handleSubmitNewDocument} 
-                            text="Submit" 
-                            className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
-                        />
-                        <Button 
-                            onClick={() => setShowNewDocumentModal(false)} 
-                            text="Cancel" 
-                            className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center w-full" 
-                        />
-                    </div>
-                </div>
-            )}
+           {/* New Document Modal */}
+{showNewDocumentModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
+            <h2 className="text-xl font-bold mb-4">Create New Document</h2>
+            
+            {/* Document Name Input */}
+            <label className="block mb-2 font-medium">Document Name:</label>
+            <input
+                type="text"
+                value={newAnswerSetName}
+                onChange={(e) => setNewAnswerSetName(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                placeholder="e.g. GatewayGWA6Array"
+            />
+
+            {/* Primary Values Input */}
+            <label className="block mb-2 font-medium">Primary Values:</label>
+            {primaryValues.map((value, index) => (
+                <p key={index} className="ml-2 mb-2 text-gray-700">- {value}</p>
+            ))}
+            <input
+                type="text"
+                value={newPrimaryValue}
+                onChange={(e) => setNewPrimaryValue(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                placeholder="Enter primary value"
+            />
+            <Button 
+                onClick={handleAddPrimaryValue} 
+                text="Add Primary Value" 
+                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
+            />
+
+            {/* Submit and Cancel Buttons */}
+            <Button 
+                onClick={handleSubmitNewArray} 
+                text="Submit" 
+                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
+            />
+            <Button 
+                onClick={() => setShowNewDocumentModal(false)} 
+                text="Cancel" 
+                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center w-full" 
+            />
+        </div>
+    </div>
+)}
+
             {editModalVisible && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
@@ -883,28 +1124,41 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
             <h2 className="text-xl font-bold mb-4">Enter New Site</h2>
+            
             <input
                 type="text"
                 value={newSiteName}
-                onChange={(e) => setNewSiteName(e.target.value)}
+                onChange={(e) => {
+                    setNewSiteName(e.target.value);
+                    setMessageBox({ show: false, text: '' }); // Clear message box on input change
+                }}
                 className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
                 placeholder="Enter site name"
             />
+
             <div className="flex justify-end space-x-2">
                 <Button
-                    onClick={() => setShowAddSiteForm(false)}
+                    onClick={() => {
+                        setShowAddSiteForm(false);
+                        setNewSiteName(''); // Clear input field on cancel
+                        setMessageBox({ show: false, text: '' });
+                    }}
                     text="Cancel"
                     className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center"
                 />
                 <Button
                     onClick={async () => {
                         if (newSiteName.trim()) {
-                            await addNewSite(); // Call the addNewSite function here
-                            setNewSiteName(''); // Clear input field
+                            if (siteOptions.includes(newSiteName.trim())) {
+                                setMessageBox({ show: true, text: 'This site already exists. Please choose a different name.' });
+                                return;
+                            }
+                            await addNewSite();
+                            setNewSiteName('');
                             setShowAddSiteForm(false);
                             setShowAddSiteModal(false);
                         } else {
-                            alert("Please enter a site name.");
+                            setMessageBox({ show: true, text: 'Please enter a site name.' });
                         }
                     }}
                     text="Add Site"
@@ -1005,70 +1259,120 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
                     </div>
                 </div>
             )}
-
-{showAddArrayModal && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
-            <h2 className="text-xl font-bold mb-4">Add New Array</h2>
-            <label className="block mb-2 font-medium">Array Name:</label>
-            <input
-                type="text"
-                value={newArrayName}
-                onChange={(e) => setNewArrayName(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                placeholder="Enter array name"
-            />
-
-            <label className="block mb-2 font-medium">Primary Values:</label>
-            {primaryValues.map((value, index) => (
-                <p key={index} className="ml-2 mb-2 text-gray-700">- {value}</p>
-            ))}
-            <input
-                type="text"
-                value={newPrimaryValue}
-                onChange={(e) => setNewPrimaryValue(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                placeholder="Enter primary value"
-            />
-            <Button 
-                onClick={handleAddPrimaryValue} 
-                text="Add Primary Value" 
-                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
-            />
-
-            <label className="block mb-2 font-medium">Secondary Keys:</label>
-             {secondaryKeys.map((key, index) => (
-            <p key={index} className="ml-2 mb-2 text-gray-700">- {key}</p>
-            ))}
-            <input
-                type="text"
-                value={newSecondaryKey}
-                onChange={(e) => setNewSecondaryKey(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                placeholder="Enter secondary key"
-           />
-            <Button 
-                onClick={handleAddSecondaryKey} 
-                text="Add Secondary Key" 
-                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
-            />
-
-
-            <div className="flex justify-end space-x-2">
-                <Button 
-                    onClick={() => setShowAddArrayModal(false)} 
-                    text="Cancel" 
-                    className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center" 
-                />
-                <Button 
-                    onClick={handleSubmitNewArray} 
-                    text="Add Array" 
-                    className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center" 
-                />
-            </div>
+            {messageBox.show && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg text-center">
+            <p className="text-lg font-medium text-gray-900 dark:text-white mb-4">{messageBox.text}</p>
+            <button
+                onClick={() => setMessageBox({ show: false, text: '' })}
+                className="bg-asu-maroon text-white px-4 py-2 border border-white rounded hover:bg-maroon-700"
+            >
+                OK
+            </button>
         </div>
     </div>
 )}
+
+{showAddArrayModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
+                    <h2 className="text-xl font-bold mb-4">Manage Arrays</h2>
+
+                    {/* Project Dropdown */}
+                    <label className="block mb-2 font-medium">Select Project:</label>
+                    <select
+                        value={selectedProject}
+                        onChange={(e) => {
+                            handleProjectSelection(e.target.value);
+                            setSelectedProject(e.target.value);
+                        }}
+                        className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                    >
+                        <option value="">Select a Project</option>
+                        <option value="Gateway">Gateway</option>
+                        <option value="San Pedro">San Pedro</option>
+                        <option value="Virgin River">Virgin River</option>
+                    </select>
+
+                    {/* Site Dropdown */}
+                    {selectedProject && (
+                        <>
+                            <label className="block mb-2 font-medium">Select Site:</label>
+                            <select
+                                value={selectedSite}
+                                onChange={(e) => handleSiteSelection(e.target.value)}
+                                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                            >
+                                <option value="">Select a Site</option>
+                                {siteOptions.map((site, index) => (
+                                    <option key={index} value={site}>
+                                        {site}
+                                    </option>
+                                ))}
+                            </select>
+                        </>
+                    )}
+
+                    {/* Buttons for Viewing and Adding Arrays */}
+                    {selectedProject && selectedSite && (
+                        <>
+                            <Button
+                                onClick={fetchExistingArrays}
+                                text="View existing arrays"
+                                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2"
+                            />
+                            <Button
+                                onClick={() => setShowExistingArrays(false)}
+                                text="Add new array"
+                                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-4"
+                            />
+                        </>
+                    )}
+
+                    {/* Show existing arrays */}
+                    {showExistingArrays && existingArrays.length > 0 && (
+                        <div className="mt-4">
+                            <h3 className="text-lg font-bold">Existing Arrays:</h3>
+                            <ul className="list-disc pl-5">
+                                {existingArrays.map((array, index) => (
+                                    <li key={index} className="text-gray-700 dark:text-gray-300">{array}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Add new array input */}
+                    {selectedProject && selectedSite && !showExistingArrays && (
+                        <>
+                            <input
+                                type="text"
+                                value={newArrayName}
+                                onChange={(e) => setNewArrayName(e.target.value)}
+                                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                                placeholder="Enter new array name"
+                            />
+                            <Button
+                                onClick={handleAddNewArray}
+                                text="Add Array"
+                                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2"
+                            />
+                        </>
+                    )}
+
+                    {/* Display messages */}
+                    {message && <p className="text-red-500 text-sm">{message}</p>}
+
+                    <div className="flex justify-end space-x-2">
+                        <Button
+                            onClick={() => setShowAddArrayModal(false)}
+                            text="Cancel"
+                            className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center"
+                        />
+                    </div>
+                </div>
+            </div>
+        )}
+
 {successMessage && (
     <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-md">
         {successMessage}
