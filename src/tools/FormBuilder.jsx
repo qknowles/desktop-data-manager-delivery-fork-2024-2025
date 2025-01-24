@@ -350,13 +350,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         setShowAddArrayModal(true);
     };
     
-
-    const handleAddPrimaryValue = () => {
-        if (newPrimaryValue.trim() !== '') {
-            setPrimaryValues([...primaryValues, newPrimaryValue.trim()]);
-            setNewPrimaryValue('');
-        }
-    };
     
     const handleAddSecondaryKeyArray = () => {
         if (newSecondaryKey.trim() !== '') {
@@ -364,39 +357,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             setNewSecondaryKey('');
         }
     };
-
-    const handleSubmitNewArray = async () => {
-        if (newArrayName.trim() === '' || primaryValues.length === 0) {
-            setMessageBox({ show: true, text: 'Please provide an array name and at least one primary value.' });
-            return;
-        }
-    
-        try {
-            
-            const secondaryKeysString = secondaryKeys.join(', ');
-    
-            await addDoc(collection(db, 'AnswerSet'), {
-                set_name: newArrayName,
-                answers: primaryValues.map((value) => ({ primary: value })),
-                secondary_keys: secondaryKeysString, // Store as a string
-                date_modified: Date.now(), 
-            });
-    
-            setMessageBox({ show: true, text: 'Array added successfully.' });
-            setNewArrayName('');
-            setPrimaryValues([]);
-            setSecondaryKeys([]);
-            setShowAddArrayModal(false);
-            triggerRerender(); // Refresh the UI
-        } catch (error) {
-            console.error('Error adding new array:', error);
-            setMessageBox({ show: true, text: 'Failed to add the array.' });
-        }
-    };    
-
-    
-    
-    
 
 
     const confirmDeletePrimaryField = async () => {
@@ -572,11 +532,74 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     };
 
     const handleSubmitNewDocument = async () => {
-        const docRef = collection(db, 'AnswerSet');
-        await addDoc(docRef, { set_name: newAnswerSetName, secondary_keys: secondaryKeys });
-        setShowNewDocumentModal(false);
-        triggerRerender();
+        if (newAnswerSetName.trim() === '' || primaryValues.length === 0) {
+            setMessageBox({ show: true, text: 'Please provide a document name and at least one primary value.' });
+            return;
+        }
+    
+        try {
+            // Prepare primary fields in the correct format
+            const primaryData = primaryValues.map(value => ({ primary: value }));
+    
+            await addDoc(collection(db, 'AnswerSet'), {
+                set_name: newAnswerSetName,
+                answers: primaryData,  // Store primary fields in answers
+                secondary_keys: secondaryKeys.join(', '), // Store secondary keys as a string
+                date_modified: Date.now(), 
+            });
+    
+            setMessageBox({ show: true, text: 'New document created successfully.' });
+    
+            // Reset form fields
+            setNewAnswerSetName('');
+            setPrimaryValues([]);
+            setSecondaryKeys([]);
+            setShowNewDocumentModal(false);
+            triggerRerender(); // Refresh the UI
+        } catch (error) {
+            console.error('Error adding new document:', error);
+            setMessageBox({ show: true, text: 'Failed to create the document.' });
+        }
     };
+
+    const handleSubmitNewArray = async () => {
+        if (newAnswerSetName.trim() === '' || primaryValues.length === 0) {
+            setMessageBox({ show: true, text: 'Please provide a document name and at least one primary value.' });
+            return;
+        }
+    
+        try {
+            // Check if the document name already exists
+            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', newAnswerSetName.trim()));
+            const querySnapshot = await getDocs(q);
+    
+            if (!querySnapshot.empty) {
+                setMessageBox({ show: true, text: `Document "${newAnswerSetName.trim()}" already exists. Please use a different name.` });
+                return;
+            }
+    
+            // Proceed with document creation if the name does not exist
+            await addDoc(collection(db, 'AnswerSet'), {
+                set_name: newAnswerSetName.trim(),
+                answers: primaryValues.map((value) => ({ primary: value })),  // Store as primary fields
+                date_modified: Date.now(),
+            });
+    
+            setMessageBox({ show: true, text: 'Document created successfully!' });
+    
+            // Reset form fields
+            setNewAnswerSetName('');
+            setPrimaryValues([]);
+            setShowNewDocumentModal(false);
+            triggerRerender();
+        } catch (error) {
+            console.error('Error adding new document:', error);
+            setMessageBox({ show: true, text: 'Failed to create the document. Please try again.' });
+        }
+    };
+    
+    
+    
 
     const handleAddSite = () => {
         setShowAddSiteModal(true); // Open the "Add Site" modal
@@ -786,6 +809,12 @@ const addNewSpecies = async () => {
     }
 };
 
+const handleAddPrimaryValue = () => {
+    if (newPrimaryValue.trim() !== '') {
+        setPrimaryValues([...primaryValues, newPrimaryValue.trim()]);
+        setNewPrimaryValue('');
+    }
+};
 
     
     const addSiteToProjectDocument = async (project, siteName) => {
@@ -1015,48 +1044,55 @@ const addNewSpecies = async () => {
     </div>
 )}
 
-            {/* New Document Modal */}
-            {showNewDocumentModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
-                        <h2 className="text-xl font-bold mb-4">Create New Document</h2>
-                        <label className="block mb-2 font-medium">Answer Set Name:</label>
-                        <input
-                            type="text"
-                            value={newAnswerSetName}
-                            onChange={(e) => setNewAnswerSetName(e.target.value)}
-                            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                            placeholder="Enter answer set name"
-                        />
-                        <label className="block mb-2 font-medium">Secondary Keys:</label>
-                        {secondaryKeys.map((key, index) => (
-                            <p key={index} className="ml-2 mb-2 text-gray-700">- {key}</p>
-                        ))}
-                        <input
-                            type="text"
-                            value={newSecondaryKey}
-                            onChange={(e) => setNewSecondaryKey(e.target.value)}
-                            className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
-                            placeholder="Enter secondary key"
-                        />
-                        <Button 
-                            onClick={handleAddSecondaryKey} 
-                            text="Add Secondary Key" 
-                            className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
-                        />
-                        <Button 
-                            onClick={handleSubmitNewDocument} 
-                            text="Submit" 
-                            className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
-                        />
-                        <Button 
-                            onClick={() => setShowNewDocumentModal(false)} 
-                            text="Cancel" 
-                            className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center w-full" 
-                        />
-                    </div>
-                </div>
-            )}
+           {/* New Document Modal */}
+{showNewDocumentModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
+            <h2 className="text-xl font-bold mb-4">Create New Document</h2>
+            
+            {/* Document Name Input */}
+            <label className="block mb-2 font-medium">Document Name:</label>
+            <input
+                type="text"
+                value={newAnswerSetName}
+                onChange={(e) => setNewAnswerSetName(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                placeholder="e.g. GatewayGWA6Array"
+            />
+
+            {/* Primary Values Input */}
+            <label className="block mb-2 font-medium">Primary Values:</label>
+            {primaryValues.map((value, index) => (
+                <p key={index} className="ml-2 mb-2 text-gray-700">- {value}</p>
+            ))}
+            <input
+                type="text"
+                value={newPrimaryValue}
+                onChange={(e) => setNewPrimaryValue(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+                placeholder="Enter primary value"
+            />
+            <Button 
+                onClick={handleAddPrimaryValue} 
+                text="Add Primary Value" 
+                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
+            />
+
+            {/* Submit and Cancel Buttons */}
+            <Button 
+                onClick={handleSubmitNewArray} 
+                text="Submit" 
+                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center mb-2 w-full" 
+            />
+            <Button 
+                onClick={() => setShowNewDocumentModal(false)} 
+                text="Cancel" 
+                className="flex rounded-md p-1.5 text-white whitespace-nowrap bg-asu-maroon border-2 border-transparent items-center w-full" 
+            />
+        </div>
+    </div>
+)}
+
             {editModalVisible && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-80">
