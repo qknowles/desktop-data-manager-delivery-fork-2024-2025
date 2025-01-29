@@ -16,19 +16,21 @@ export default function DataManager({ name, labels = [], entries = [], setEntrie
     const [search, setSearch] = useState('');
 
     useEffect(() => {
-        setColumns(labels.reduce((acc, label) => {
-            acc[label] = { show: true };
-            return acc;
-        }, {}));
+        setColumns(
+            labels.reduce((acc, label) => {
+                acc[label] = { show: true };
+                return acc;
+            }, {}),
+        );
     }, [labels]);
 
     const toggleColumn = useCallback((label) => {
-        setColumns(prevColumns => ({
+        setColumns((prevColumns) => ({
             ...prevColumns,
             [label]: {
                 ...prevColumns?.[label],
-                show: !prevColumns?.[label]?.show
-            }
+                show: !prevColumns?.[label]?.show,
+            },
         }));
     }, []);
 
@@ -68,23 +70,25 @@ export default function DataManager({ name, labels = [], entries = [], setEntrie
         setSearch(e.target.value);
     }, []);
 
-    const filteredEntries = useCallback((entries, search) => {
-        
-        if (search === '') {
-            return entries;
-        }
-    
-        const searchTerms = search.split('+').map(term => term.trim().toLowerCase());
-    
-        return entries.filter((entry) => {
-            return searchTerms.every((term) => 
-                labels.some((label) => {
-                    const entryValue = getValue(entry, label)?.toString().toLowerCase();
-                    return entryValue?.includes(term);
-                })
-            );
-        });
-    }, [labels]);
+    const filteredEntries = useCallback(
+        (entries, search) => {
+            if (search === '') {
+                return entries;
+            }
+
+            const searchTerms = search.split('+').map((term) => term.trim().toLowerCase());
+
+            return entries.filter((entry) => {
+                return searchTerms.every((term) =>
+                    labels.some((label) => {
+                        const entryValue = getValue(entry, label)?.toString().toLowerCase();
+                        return entryValue?.includes(term);
+                    }),
+                );
+            });
+        },
+        [labels],
+    );
 
     return (
         <motion.div className="bg-white dark:bg-neutral-950">
@@ -92,14 +96,14 @@ export default function DataManager({ name, labels = [], entries = [], setEntrie
                 <h1 className="heading pt-4">{name} - Entries</h1>
                 <div className="flex px-5 items-center">
                     <SearchField search={search} setSearch={handleSearchChange} />
-                    <div className='flex justify-center text-2xl'>
+                    <div className="flex justify-center text-2xl">
                         <ColumnSelectorButton
                             labels={labels}
                             columns={columns}
                             toggleColumn={toggleColumn}
                         />
                         <CSVLink
-                            className='hover:scale-125 transition h-8 cursor-pointer'
+                            className="hover:scale-125 transition h-8 cursor-pointer"
                             data={generateCSV(labels, entries)}
                             filename={getCSVName(entries[0]) + '.csv'}
                             onClick={() => {
@@ -113,7 +117,6 @@ export default function DataManager({ name, labels = [], entries = [], setEntrie
                             <ExportIcon />
                         </CSVLink>
                     </div>
-
                 </div>
             </div>
             <div className="overflow-auto w-full h-full-table">

@@ -7,7 +7,19 @@ import DataManager from '../tools/DataManager';
 import { useAtom, useAtomValue } from 'jotai';
 import { currentBatchSize, currentProjectName, currentTableName, appMode } from '../utils/jotai';
 import TableTools from '../components/TableTools';
-import { FormBuilderIcon, ExportIcon, NewDataIcon, TurtleIcon, LizardIcon, MammalIcon, SnakeIcon, ArthropodIcon, AmphibianIcon, SessionIcon, MergeIcon } from '../assets/icons';
+import {
+    FormBuilderIcon,
+    ExportIcon,
+    NewDataIcon,
+    TurtleIcon,
+    LizardIcon,
+    MammalIcon,
+    SnakeIcon,
+    ArthropodIcon,
+    AmphibianIcon,
+    SessionIcon,
+    MergeIcon,
+} from '../assets/icons';
 import FormBuilderModal from '../modals/FormBuilderModal';
 import ExportModal from '../modals/ExportModal';
 import DataInputModal from '../modals/DataInputModal';
@@ -32,25 +44,25 @@ export default function TablePage() {
     const { loadBatch, loadNextBatch, loadPreviousBatch } = usePagination(setEntries);
 
     const loadDynamicArthropodLabels = async () => {
-        setLabels(await dynamicArthropodLabels())
-    }
+        setLabels(await dynamicArthropodLabels());
+    };
 
     const triggerRerender = () => setRerender(!rerender);
 
     useEffect(() => {
         if (additionalConstraints) {
-            console.log(additionalConstraints)
-            loadBatch(additionalConstraints)
+            console.log(additionalConstraints);
+            loadBatch(additionalConstraints);
         }
-    }, [additionalConstraints])
+    }, [additionalConstraints]);
 
     useEffect(() => {
         if (tableName === 'Arthropod') {
             loadDynamicArthropodLabels();
         } else {
-            setLabels(TABLE_LABELS[tableName])
+            setLabels(TABLE_LABELS[tableName]);
         }
-        loadBatch()
+        loadBatch();
     }, [tableName, batchSize, currentProject, environment, rerender]);
 
     const tabsData = [
@@ -65,7 +77,7 @@ export default function TablePage() {
 
     return (
         <PageWrapper>
-            {(!labels || !entries.length) ? (
+            {!labels || !entries.length ? (
                 <div>Loading...</div>
             ) : (
                 <>
@@ -109,7 +121,9 @@ export default function TablePage() {
                             labels={labels}
                             entries={entries}
                             setEntries={setEntries}
-                            updateConstraints={(newConstraints) => setAdditionalConstraints(newConstraints)}
+                            updateConstraints={(newConstraints) =>
+                                setAdditionalConstraints(newConstraints)
+                            }
                         />
                         <div className="flex justify-between overflow-auto dark:bg-neutral-800">
                             <TableTools>
@@ -147,5 +161,5 @@ export default function TablePage() {
                 </>
             )}
         </PageWrapper>
-    )
-};
+    );
+}

@@ -32,7 +32,7 @@ export const Table = ({ labels, columns, entries, name, setEntries }) => {
                 // Reduced padding from 40 to 16
                 let maxWidth = measureDiv.offsetWidth + 12;
 
-                entries.forEach(entry => {
+                entries.forEach((entry) => {
                     const key = getKey(label, name);
                     const value = entry.data?.()[key] || 'N/A';
                     measureDiv.textContent = String(value);
@@ -58,10 +58,10 @@ export const Table = ({ labels, columns, entries, name, setEntries }) => {
         const sortedEntries = [...entries];
         sortedEntries.sort((a, b) => {
             if (getValue(a, column) > getValue(b, column)) {
-                return (direction === 'asc') ? 1 : -1;
+                return direction === 'asc' ? 1 : -1;
             }
             if (getValue(a, column) < getValue(b, column)) {
-                return (direction === 'asc') ? -1 : 1;
+                return direction === 'asc' ? -1 : 1;
             }
             return 0;
         });
@@ -97,9 +97,9 @@ export const Table = ({ labels, columns, entries, name, setEntries }) => {
         const newWidth = Math.max(20, currentWidth + mouseMove);
 
         requestAnimationFrame(() => {
-            setColumnWidths(prev => ({
+            setColumnWidths((prev) => ({
                 ...prev,
-                [resizing]: Math.min(newWidth, 400) // Keeping maximum width at 400px
+                [resizing]: Math.min(newWidth, 400), // Keeping maximum width at 400px
             }));
         });
 
@@ -144,83 +144,85 @@ export const Table = ({ labels, columns, entries, name, setEntries }) => {
                     className="w-full table-auto border-collapse"
                     style={{
                         tableLayout: 'fixed',
-                        borderSpacing: 0
+                        borderSpacing: 0,
                     }}
                 >
                     <thead>
-                    <tr className="border-b border-neutral-200">
-                        <th
-                            className="relative font-semibold text-gray-600 text-center"
-                            style={{
-                                width: columnWidths['actions'] || 60,
-                                minWidth: 20,
-                                position: 'relative',
-                                padding: '4px 2px', // Minimal padding
-                            }}
-                        >
-                            Actions
-                            <div
-                                className="absolute top-0 h-full cursor-col-resize hover:bg-blue-400 z-10"
+                        <tr className="border-b border-neutral-200">
+                            <th
+                                className="relative font-semibold text-gray-600 text-center"
                                 style={{
-                                    right: '-1px',
-                                    width: '2px',
-                                    transform: 'translateX(50%)',
+                                    width: columnWidths['actions'] || 60,
+                                    minWidth: 20,
+                                    position: 'relative',
+                                    padding: '4px 2px', // Minimal padding
                                 }}
-                                onMouseDown={(e) => startResizing(e, 'actions')}
-                            />
-                        </th>
-                        {labels && labels.map((label, index) =>
-                                columns[label]?.show && (
-                                    <th
-                                        key={label}
-                                        className="relative border-l border-neutral-200"
-                                        style={{
-                                            width: columnWidths[index] || 60,
-                                            minWidth: 20,
-                                            position: 'relative',
-                                            padding: '4px 2px', // Minimal padding
-                                        }}
-                                    >
-                                        <TableHeading
-                                            label={label}
-                                            active={sortedColumn === label}
-                                            sortDirection={sortDirection}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                sortByColumn(label);
-                                            }}
-                                        />
-                                        <div
-                                            className="absolute top-0 h-full cursor-col-resize hover:bg-red-800/50 z-10"
-                                            style={{
-                                                right: '-1px',
-                                                width: '6px',
-                                                transform: 'translateX(50%)',
-                                            }}
-                                            onMouseDown={(e) => {
-                                                e.stopPropagation();
-                                                startResizing(e, index);
-                                            }}
-                                        />
-                                    </th>
-                                )
-                        )}
-                    </tr>
+                            >
+                                Actions
+                                <div
+                                    className="absolute top-0 h-full cursor-col-resize hover:bg-blue-400 z-10"
+                                    style={{
+                                        right: '-1px',
+                                        width: '2px',
+                                        transform: 'translateX(50%)',
+                                    }}
+                                    onMouseDown={(e) => startResizing(e, 'actions')}
+                                />
+                            </th>
+                            {labels &&
+                                labels.map(
+                                    (label, index) =>
+                                        columns[label]?.show && (
+                                            <th
+                                                key={label}
+                                                className="relative border-l border-neutral-200"
+                                                style={{
+                                                    width: columnWidths[index] || 60,
+                                                    minWidth: 20,
+                                                    position: 'relative',
+                                                    padding: '4px 2px', // Minimal padding
+                                                }}
+                                            >
+                                                <TableHeading
+                                                    label={label}
+                                                    active={sortedColumn === label}
+                                                    sortDirection={sortDirection}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        sortByColumn(label);
+                                                    }}
+                                                />
+                                                <div
+                                                    className="absolute top-0 h-full cursor-col-resize hover:bg-red-800/50 z-10"
+                                                    style={{
+                                                        right: '-1px',
+                                                        width: '6px',
+                                                        transform: 'translateX(50%)',
+                                                    }}
+                                                    onMouseDown={(e) => {
+                                                        e.stopPropagation();
+                                                        startResizing(e, index);
+                                                    }}
+                                                />
+                                            </th>
+                                        ),
+                                )}
+                        </tr>
                     </thead>
                     <tbody>
-                    {sortedEntries(entries, sortedColumn, sortDirection).map((entry, index) => (
-                        <TableEntry
-                            index={index}
-                            key={entry.id}
-                            entrySnapshot={entry}
-                            shownColumns={[...labels].filter(label => columns[label]?.show)}
-                            tableName={name}
-                            removeEntry={() => {
-                                setEntries(entries.filter(e => e !== entry));
-                            }}
-                            columnWidths={columnWidths}
-                        />
-                    ))}
+                        {sortedEntries(entries, sortedColumn, sortDirection).map((entry, index) => (
+                            <TableEntry
+                                index={index}
+                                key={entry.id}
+                                entrySnapshot={entry}
+                                shownColumns={[...labels].filter((label) => columns[label]?.show)}
+                                tableName={name}
+                                removeEntry={() => {
+                                    setEntries(entries.filter((e) => e !== entry));
+                                }}
+                                columnWidths={columnWidths}
+                            />
+                        ))}
                     </tbody>
                 </table>
             </div>

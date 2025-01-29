@@ -15,9 +15,8 @@ export default function Modal({
         cancel: 'Cancel',
         okay: 'Okay',
         back: null,
-    }
+    },
 }) {
-   
     return (
         <motion.div
             className={`relative z-50`}
@@ -42,26 +41,30 @@ export default function Modal({
                                     <ModalHeader title={title} text={text} />
                                     <ModalContent>{children}</ModalContent>
                                     <ModalFooter>
-                                    {buttonOptions.back && (
+                                        {buttonOptions.back && (
                                             <Button
                                                 onClick={() => {
-                                                    console.log("Back button clicked");
+                                                    console.log('Back button clicked');
                                                     onBack();
                                                 }}
                                                 text={buttonOptions.back}
                                                 enabled={true}
                                             />
                                         )}
-                                        {buttonOptions.cancel && <Button
-                                            onClick={() => onCancel()}
-                                            text={buttonOptions.cancel}
-                                            enabled={true}
-                                        />}
-                                        {buttonOptions.okay && <Button
-                                            onClick={() => onOkay()}
-                                            text={buttonOptions.okay}
-                                            enabled={true}
-                                        />}
+                                        {buttonOptions.cancel && (
+                                            <Button
+                                                onClick={() => onCancel()}
+                                                text={buttonOptions.cancel}
+                                                enabled={true}
+                                            />
+                                        )}
+                                        {buttonOptions.okay && (
+                                            <Button
+                                                onClick={() => onOkay()}
+                                                text={buttonOptions.okay}
+                                                enabled={true}
+                                            />
+                                        )}
                                     </ModalFooter>
                                 </ModalWrapper>
                             </ModalBuffer>
@@ -107,10 +110,18 @@ function ModalHeader({ title, text }) {
 }
 
 function ModalContent({ children }) {
-    return <div className="bg-white dark:bg-neutral-950 max-h-full-modal-content-height overflow-auto">{children}</div>;
+    return (
+        <div className="bg-white dark:bg-neutral-950 max-h-full-modal-content-height overflow-auto">
+            {children}
+        </div>
+    );
 }
 
 function ModalFooter({ children }) {
-    console.log("ModalFooter children:", children);
-    return <div className="bg-neutral-100 dark:bg-neutral-900 p-4 flex justify-end space-x-5">{children}</div>;
+    console.log('ModalFooter children:', children);
+    return (
+        <div className="bg-neutral-100 dark:bg-neutral-900 p-4 flex justify-end space-x-5">
+            {children}
+        </div>
+    );
 }
