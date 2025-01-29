@@ -6,7 +6,7 @@ import lizardImage from '../assets/lizard.jpg';
 import React from 'react';
 
 export default function HomePage() {
-    const [ setCurrentPage] = useSetAtom(currentPageName);
+    const setCurrentPage = useSetAtom(currentPageName);
 
     return (
         <PageWrapper>

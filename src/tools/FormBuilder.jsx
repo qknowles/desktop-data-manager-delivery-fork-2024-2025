@@ -1,7 +1,7 @@
 import { useState, useSetState, useEffect } from 'react';
-import { collection, getDocs, setDoc, doc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import { getDoc, updateDoc } from 'firebase/firestore';
+import { updateDoc } from 'firebase/firestore';
 import { query, where } from 'firebase/firestore';
 import Button from '../components/Button';
 import React from 'react';
@@ -13,23 +13,20 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [selectedData, setSelectedData] = useState('');
     const [editData, setEditData] = useState({});
     const [editModalVisible, setEditModalVisible] = useState(false);
-    const [setShowSuccessPopup] = useSetState(false);
+    const setShowSuccessPopup = useSetState(false);
 
     
     // New Document Creation Modal state
     const [showNewDocumentModal, setShowNewDocumentModal] = useState(false);
     const [newAnswerSetName, setNewAnswerSetName] = useState('');
-    const [secondaryKeys, setSecondaryKeys] = useState([]);
-    const [newSecondaryKey, setNewSecondaryKey] = useState('');
     const [arrayOptions, setArrayOptions] = useState([]);
     const [selectedArray, setSelectedArray] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [primaryFields, setPrimaryFields] = useState([]); 
-    const [selectedField, setSelectedField] = useState(null);
-    const [setDeleteMode] = useSetState('');
+    const setDeleteMode = useSetState('');
     const [showAddSiteModal, setShowAddSiteModal] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
-    const [setSites] = useSetState([]);
+    const setSites = useSetState([]);
     const [refreshSites, setRefreshSites] = useState(false);
     const [showViewSites, setShowViewSites] = useState(false);
     const [showAddSiteForm, setShowAddSiteForm] = useState(false);
@@ -38,7 +35,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
 
     const [refreshSpecies, setRefreshSpecies] = useState(false);
     const [showAddSpeciesModal, setShowAddSpeciesModal] = useState(false);
-    const [setSpeciesOptions] = useSetState([]);
     const [showAddSpeciesForm, setShowAddSpeciesForm] = useState(false);
     const [selectedCritter, setSelectedCritter] = useState('');
     const [existingArrays, setExistingArrays] = useState([]);
@@ -184,11 +180,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             setPrimaryFields([]); 
         }
     };
-    
-    
-    
-    
-
 
     const renderDeleteArrayModal = () => (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
