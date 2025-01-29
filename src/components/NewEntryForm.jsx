@@ -11,7 +11,7 @@ import InputLabel from "./InputLabel";
 import { Type, notify } from "./Notifier";
 import React from 'react';
 
-export default function NewEntryForm({ setData }) {
+export default function NewEntryForm() {
     const environment = useAtomValue(appMode);
     const [sessions, setSessions] = useState([]);
     const [selectedSessionIndex, setSelectedSessionIndex] = useState(0);
@@ -19,7 +19,7 @@ export default function NewEntryForm({ setData }) {
     const [year, setYear] = useState('');
     const [selectedCritter, setSelectedCritter] = useState('');
 
-    const sessionIndexMap = sessions.map((session, index) => index);
+    const sessionIndexMap = sessions.map((index) => index);
 
     useEffect(() => {
         getSessionsByProjectAndYear(environment, project.replace(/\s/g, ''), year).then((sessions) => {

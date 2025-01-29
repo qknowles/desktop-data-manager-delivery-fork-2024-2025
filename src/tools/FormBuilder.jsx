@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useSetState, useEffect } from 'react';
 import { collection, getDocs, setDoc, doc, addDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import { getDoc, updateDoc, deleteField  } from 'firebase/firestore';
-import { deleteDoc } from 'firebase/firestore';
+import { getDoc, updateDoc } from 'firebase/firestore';
 import { query, where } from 'firebase/firestore';
 import Button from '../components/Button';
 import React from 'react';
@@ -14,7 +13,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [selectedData, setSelectedData] = useState('');
     const [editData, setEditData] = useState({});
     const [editModalVisible, setEditModalVisible] = useState(false);
-    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+    const [setShowSuccessPopup] = useSetState(false);
 
     
     // New Document Creation Modal state
@@ -27,28 +26,24 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [primaryFields, setPrimaryFields] = useState([]); 
     const [selectedField, setSelectedField] = useState(null);
-    const [deleteMode, setDeleteMode] = useState('');
+    const [setDeleteMode] = useSetState('');
     const [showAddSiteModal, setShowAddSiteModal] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
-    const [sites, setSites] = useState([]);
+    const [setSites] = useSetState([]);
     const [refreshSites, setRefreshSites] = useState(false);
     const [showViewSites, setShowViewSites] = useState(false);
     const [showAddSiteForm, setShowAddSiteForm] = useState(false);
     const [selectedProject, setSelectedProject] = useState('');
     const [siteOptions, setSiteOptions] = useState([]);
 
-    const [newSpeciesName, setNewSpeciesName] = useState('');
-    const [species, setSpecies] = useState([]);
     const [refreshSpecies, setRefreshSpecies] = useState(false);
-    const [showViewSpecies, setShowViewSpecies] = useState(false);
     const [showAddSpeciesModal, setShowAddSpeciesModal] = useState(false);
-    const [speciesOptions, setSpeciesOptions] = useState([]);
+    const [setSpeciesOptions] = useSetState([]);
     const [showAddSpeciesForm, setShowAddSpeciesForm] = useState(false);
     const [selectedCritter, setSelectedCritter] = useState('');
     const [existingArrays, setExistingArrays] = useState([]);
     const [message, setMessage] = useState('');
     const [showExistingArrays, setShowExistingArrays] = useState(false);
-    const [messageSite, setMessageSite] = useState('');
 
 
     const [newPrimary, setNewPrimary] = useState('');
@@ -58,23 +53,9 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [newArrayName, setNewArrayName] = useState('');
     const [primaryValues, setPrimaryValues] = useState([]); 
     const [newPrimaryValue, setNewPrimaryValue] = useState(''); 
-    const [successMessage, setSuccessMessage] = useState('');
+    const successMessage = '';
     const [messageBox, setMessageBox] = useState({ show: false, text: '' });
-    const [selectedSite, setSelectedSite] = useState(''); 
-    const [showConfirmationBox, setShowConfirmationBox] = useState(false);
-    const [deletionDetails, setDeletionDetails] = useState({
-       project: '',
-       site: '',
-       array: '',
-    });
-
-
-
-
-
-    const critterOptions = ["Lizard", "Mammal", "Snake", "Amphibian", "Turtle"];
-
-
+    const [selectedSite, setSelectedSite] = useState('');
 
     useEffect(() => {
         if (modalStep === 3) fetchDocuments();
@@ -124,34 +105,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             console.log('Array Options for Dropdown:', tempArrayOptions);
         } catch (error) {
             console.error('Error fetching documents:', error);
-        }
-    };
-
-    const handleArraySelection = async (e) => {
-        const arrayName = e.target.value; 
-        setSelectedArray(arrayName);
-        setPrimaryFields([]); 
-        setSelectedField(null); 
-    
-        if (arrayName) {
-            try {
-                
-                const selected = arrayOptions.find(array => array.name === arrayName);
-                if (selected && selected.docId) {
-                    const docRef = doc(db, 'AnswerSet', selected.docId);
-                    const docSnapshot = await getDoc(docRef);
-    
-                    if (docSnapshot.exists()) {
-                        const answers = docSnapshot.data().answers || [];
-                        const primaryFields = answers.map(field => field.primary); 
-                        setPrimaryFields(primaryFields); 
-                    } else {
-                        console.error('Document does not exist.');
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching primary fields:', error);
-            }
         }
     };
     
@@ -349,40 +302,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const handleAddArrayClick = () => {
         setShowAddArrayModal(true);
     };
-    
-    
-    const handleAddSecondaryKeyArray = () => {
-        if (newSecondaryKey.trim() !== '') {
-            setSecondaryKeys([...secondaryKeys, newSecondaryKey.trim()]);
-            setNewSecondaryKey('');
-        }
-    };
-
-
-    const confirmDeletePrimaryField = async () => {
-        if (selectedArray && selectedArray.docId && selectedField) {
-            try {
-                const docRef = doc(db, 'AnswerSet', selectedArray.docId);
-                const docSnapshot = await getDoc(docRef);
-
-                if (docSnapshot.exists()) {
-                    const data = docSnapshot.data();
-                    const updatedAnswers = data.answers.filter(field => field.primary !== selectedField);
-
-                    await setDoc(docRef, { ...data, answers: updatedAnswers });
-                    triggerRerender();
-                    alert(`Field ${selectedField} deleted successfully.`);
-                    setPrimaryFields(updatedAnswers.map(field => field.primary).filter(Boolean));
-                    setSelectedField(null);
-                }
-            } catch (error) {
-                console.error('Error deleting field:', error);
-                alert('Failed to delete the field.');
-            } finally {
-                setShowDeleteConfirm(false);
-            }
-        }
-    };
 
    const handleDocumentClick = (doc) => {
         setSelectedDocument(doc);
@@ -518,49 +437,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             alert("Please select a document and data to update.");
         }
     };
-    
-    
-    
-    
-    
-
-    const handleAddSecondaryKey = () => {
-        if (newSecondaryKey.trim() !== '') {
-            setSecondaryKeys([...secondaryKeys, newSecondaryKey]);
-            setNewSecondaryKey('');
-        }
-    };
-
-    const handleSubmitNewDocument = async () => {
-        if (newAnswerSetName.trim() === '' || primaryValues.length === 0) {
-            setMessageBox({ show: true, text: 'Please provide a document name and at least one primary value.' });
-            return;
-        }
-    
-        try {
-            // Prepare primary fields in the correct format
-            const primaryData = primaryValues.map(value => ({ primary: value }));
-    
-            await addDoc(collection(db, 'AnswerSet'), {
-                set_name: newAnswerSetName,
-                answers: primaryData,  // Store primary fields in answers
-                secondary_keys: secondaryKeys.join(', '), // Store secondary keys as a string
-                date_modified: Date.now(), 
-            });
-    
-            setMessageBox({ show: true, text: 'New document created successfully.' });
-    
-            // Reset form fields
-            setNewAnswerSetName('');
-            setPrimaryValues([]);
-            setSecondaryKeys([]);
-            setShowNewDocumentModal(false);
-            triggerRerender(); // Refresh the UI
-        } catch (error) {
-            console.error('Error adding new document:', error);
-            setMessageBox({ show: true, text: 'Failed to create the document.' });
-        }
-    };
 
     const handleSubmitNewArray = async () => {
         if (newAnswerSetName.trim() === '' || primaryValues.length === 0) {
@@ -614,29 +490,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
         setSelectedProject(''); 
         setSelectedCritter('');
     };
-    
-    const fetchSpeciesForProjectAndCritter = async () => {
-        const projectCritterSetName = `${selectedProject}${selectedCritter}Species`; // e.g., GatewayLizardSpecies
-
-        try {
-            const q = query(collection(db, 'AnswerSet'), where('set_name', '==', projectCritterSetName));
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                const docSnapshot = querySnapshot.docs[0];
-                const data = docSnapshot.data();
-                const speciesList = data.answers.map(answer => answer.primary); // Assuming each answer entry has a `primary` field for species name
-
-                setSpeciesOptions(speciesList); // Set fetched species list
-                console.log(`Fetched species for ${projectCritterSetName}:`, speciesList);
-            } else {
-                console.error(`Document with set_name ${projectCritterSetName} does not exist.`);
-                setSpeciesOptions([]); // Clear if no document found
-            }
-        } catch (error) {
-            console.error(`Error fetching species for ${projectCritterSetName}:`, error);
-        }
-    };
 
     const fetchSites = async () => {
         try {
@@ -673,8 +526,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             console.error(`Error fetching sites for project ${projectName}:`, error);
         }
     };
-
-    
 
     const handleProjectSelection = (projectName) => {
         setSelectedProject(projectName);
@@ -815,14 +666,6 @@ const handleAddPrimaryValue = () => {
         setNewPrimaryValue('');
     }
 };
-
-    
-    const addSiteToProjectDocument = async (project, siteName) => {
-        const projectDocument = `${project}Sites`;
-        await updateDoc(doc(db, 'AnswerSet', projectDocument), {
-            answers: arrayUnion({ primary: siteName })
-        });
-    };
 
     const fetchExistingArrays = async () => {
         if (!selectedProject || !selectedSite) {

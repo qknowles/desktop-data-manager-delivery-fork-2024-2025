@@ -26,7 +26,7 @@ export default function TablePage() {
 
     const [currentProject, setCurrentProject] = useAtom(currentProjectName);
     const [tableName, setTableName] = useAtom(currentTableName);
-    const [batchSize, setBatchSize] = useAtom(currentBatchSize);
+    const [batchSize] = useAtomValue(currentBatchSize);
     const environment = useAtomValue(appMode);
 
     const { loadBatch, loadNextBatch, loadPreviousBatch } = usePagination(setEntries);

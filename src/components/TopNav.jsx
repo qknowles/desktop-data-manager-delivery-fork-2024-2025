@@ -1,7 +1,7 @@
 import {LizardIcon} from '../assets/icons';
 import LogoutButton from './LogoutButton';
 import UserImage from './UserImage';
-import { useAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { currentPageName } from '../utils/jotai';
 import EnvironmentSelector from './EnvironmentSelector';
 import React from 'react';
@@ -13,7 +13,7 @@ import React from 'react';
  * @returns
  */
 export default function TopNav({ title, auth }) {
-    const [currentPage, setCurrentPage] = useAtom(currentPageName)
+    const [setCurrentPage] = useSetAtom(currentPageName)
 
     return (
         <div className="px-5 bg-neutral-800 dark:bg-neutral-900 text-neutral-100 w-full shadow-md max-h-16">

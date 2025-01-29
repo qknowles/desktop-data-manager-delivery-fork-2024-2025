@@ -11,7 +11,6 @@ import {
     setDoc,
     where,
     writeBatch,
-    or,
     getCountFromServer,
 } from 'firebase/firestore';
 import { db } from './firebase';

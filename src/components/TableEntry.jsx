@@ -7,7 +7,6 @@ import { CheckIcon, CloseIcon, DeleteIcon, EditIcon } from '../assets/icons';
 import { getKey, getKeys, getLabel } from '../const/tableLabels';
 import { getSessionEntryCount, startEntryOperation } from '../utils/firestore';
 import { Type, notify } from './Notifier';
-import { FormField } from './FormFields';
 import '../styles/Table.css';
 import React from 'react';
 
@@ -107,8 +106,8 @@ export const TableEntry = forwardRef((props, ref) => {
     );
 });
 
-const EntryItem = ({ entrySnapshot, dbKey, entryUIState, setEntryData, entryData, className}) => {
-    const [editable, setEditable] = useState(true);
+const EntryItem = ({ dbKey, entryUIState, setEntryData, entryData, className}) => {
+    const editable = true;
 
     const onChangeHandler = (e) => {
         const value = e.target.value.slice(-1);
@@ -122,7 +121,7 @@ const EntryItem = ({ entrySnapshot, dbKey, entryUIState, setEntryData, entryData
         }));
     };
 
-    const onClickHandler = (e) => {
+    const onClickHandler = () => {
         if (dbKey === 'year' && entryUIState === 'editing') {
             notify(Type.error, "Editing the year directly is not supported. Please edit the date instead.");
         }

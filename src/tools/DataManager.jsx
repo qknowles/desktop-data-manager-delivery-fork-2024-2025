@@ -11,7 +11,7 @@ import { getKey } from '../const/tableLabels';
 import { notify, Type } from '../components/Notifier';
 import { getCollectionNameFromDoc } from '../utils/firestore';
 
-export default function DataManager({ name, labels = [], entries = [], setEntries, updateConstraints }) {
+export default function DataManager({ name, labels = [], entries = [], setEntries }) {
     const [columns, setColumns] = useState({});
     const [search, setSearch] = useState('');
 

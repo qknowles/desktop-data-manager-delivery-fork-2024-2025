@@ -9,22 +9,12 @@ import Modal from '../src/components/Modal';
 import '@testing-library/jest-dom';
 import { jest } from '@jest/globals';
 import NewEntryForm from '../src/components/NewEntryForm';
-import { appMode } from '../src/utils/jotai';
-import { useAtom } from 'jotai';
 import NewSessionForm from '../src/components/NewSessionForm';
-import  { Notifier } from '../src/components/Notifier';
 import Tab from '../src/components/Tab';
-import {Table } from '../src/components/Table';
-import { TableEntry } from '../src/components/TableEntry';
 import { TableHeading } from '../src/components/TableHeading';
 import TopNav from '../src/components/TopNav';
-import { CheckIcon, CloseIcon, DeleteIcon, EditIcon } from '../src/assets/icons';
-import UserImage from '../src/components/UserImage';
-import { notify, Type } from "../src/components/Notifier";
 import DataInputModal from '../src/modals/DataInputModal';
-import ExportModal from '../src/modals/ExportModal';
 import MergeSessionsModal from '../src/modals/MergeSessionsModal';
-import { CSVLink } from 'react-csv';
 
 // Button tests
 test('renders button text correctly', () => {
