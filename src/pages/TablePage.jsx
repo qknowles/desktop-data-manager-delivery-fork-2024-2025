@@ -34,11 +34,10 @@ export default function TablePage() {
     const [labels, setLabels] = useState();
     const [activeTool, setActiveTool] = useState('none');
     const [rerender, setRerender] = useState(false);
-    const [additionalConstraints, setAdditionalConstraints] = useState(null);
 
     const [currentProject, setCurrentProject] = useAtom(currentProjectName);
     const [tableName, setTableName] = useAtom(currentTableName);
-    const [batchSize] = useAtomValue(currentBatchSize);
+    const batchSize = useAtomValue(currentBatchSize);
     const environment = useAtomValue(appMode);
 
     const { loadBatch, loadNextBatch, loadPreviousBatch } = usePagination(setEntries);
@@ -48,13 +47,6 @@ export default function TablePage() {
     };
 
     const triggerRerender = () => setRerender(!rerender);
-
-    useEffect(() => {
-        if (additionalConstraints) {
-            console.log(additionalConstraints);
-            loadBatch(additionalConstraints);
-        }
-    }, [additionalConstraints]);
 
     useEffect(() => {
         if (tableName === 'Arthropod') {
@@ -121,9 +113,6 @@ export default function TablePage() {
                             labels={labels}
                             entries={entries}
                             setEntries={setEntries}
-                            updateConstraints={(newConstraints) =>
-                                setAdditionalConstraints(newConstraints)
-                            }
                         />
                         <div className="flex justify-between overflow-auto dark:bg-neutral-800">
                             <TableTools>
