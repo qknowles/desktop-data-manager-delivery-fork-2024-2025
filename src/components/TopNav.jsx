@@ -13,7 +13,7 @@ import React from 'react';
  * @returns
  */
 export default function TopNav({ title, auth }) {
-    const [setCurrentPage] = useSetAtom(currentPageName)
+    const setCurrentPage = useSetAtom(currentPageName);
 
     return (
         <div className="px-5 bg-neutral-800 dark:bg-neutral-900 text-neutral-100 w-full shadow-md max-h-16">
