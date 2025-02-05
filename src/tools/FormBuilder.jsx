@@ -1,4 +1,4 @@
-import { useState, useSetState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, addDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { updateDoc } from 'firebase/firestore';
@@ -13,7 +13,7 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [selectedData, setSelectedData] = useState('');
     const [editData, setEditData] = useState({});
     const [editModalVisible, setEditModalVisible] = useState(false);
-    const setShowSuccessPopup = useSetState(false);
+    const setShowSuccessPopup = false;
 
     // New Document Creation Modal state
     const [showNewDocumentModal, setShowNewDocumentModal] = useState(false);
@@ -22,10 +22,10 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [selectedArray, setSelectedArray] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [primaryFields, setPrimaryFields] = useState([]);
-    const setDeleteMode = useSetState('');
+    const setDeleteMode = '';
     const [showAddSiteModal, setShowAddSiteModal] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
-    const setSites = useSetState([]);
+    const setSites = [];
     const [refreshSites, setRefreshSites] = useState(false);
     const [showViewSites, setShowViewSites] = useState(false);
     const [showAddSiteForm, setShowAddSiteForm] = useState(false);
