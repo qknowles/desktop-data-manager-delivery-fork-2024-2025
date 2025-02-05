@@ -123,6 +123,7 @@ export default function NewEntryForm() {
                         critter={selectedCritter}
                         project={project}
                         session={selectedSession}
+                        reset={() => {setSelectedCritter('');}}
                     />
                 )}
             </div>
@@ -130,7 +131,7 @@ export default function NewEntryForm() {
     );
 }
 
-const CritterForm = ({ critter, project, session }) => {
+const CritterForm = ({ critter, project, session, reset }) => {
     const [entry, setEntry] = useState({});
     const [speciesArrayPromise, setSpeciesArrayPromise] = useState();
     const environment = useAtomValue(appMode);
@@ -230,6 +231,7 @@ const CritterForm = ({ critter, project, session }) => {
         if (verifyForm(critter, entry)) {
             if (await uploadNewEntry(entry, project, environment)) {
                 notify(Type.success, 'Successfully uploaded entry to session');
+                reset();
             }
         }
     };

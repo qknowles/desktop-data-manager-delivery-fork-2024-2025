@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import {
     getArraysForSite,
     getFenceTraps,
@@ -8,18 +7,16 @@ import {
     getStandardizedDateTimeString,
     getTrapStatuses,
 } from '../utils/firestore';
-import { useState } from 'react';
 import classNames from 'classnames';
 import { SearchIcon } from '../assets/icons';
 import InputLabel from './InputLabel';
 import { Type, notify } from './Notifier';
-import { useAtomValue } from 'jotai';
 import { appMode } from '../utils/jotai';
-import { AnimatePresence } from 'framer-motion';
 import { getDocs, query, collection, where } from 'firebase/firestore';
-import { motion } from 'framer-motion';
 import { db } from '../utils/firebase';
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { useAtomValue } from 'jotai';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const YearField = ({ setYear, layout }) => {
     const currentYear = new Date().getFullYear();
@@ -459,14 +456,16 @@ const TaxaField = ({ taxa }) => <ReadOnlyField label="Taxa" value={taxa} />;
 
 const SpeciesCodeField = ({ species, setSpecies, project, taxa, layout, disabled }) => {
     const [speciesOptions, setSpeciesOptions] = useState([]);
+
     useEffect(() => {
         getSpeciesCodesForProjectByTaxa(project, taxa).then((species) => {
             if (species.length) {
-                setSpeciesOptions(species.map((s) => s.code));
+                setSpeciesOptions([...new Set(species.map((s) => s.code))]); // Ensure uniqueness
                 setSpecies('');
             }
         });
     }, [taxa, project]);
+
     return (
         <InputLabel
             label="Species Code"
@@ -482,13 +481,11 @@ const SpeciesCodeField = ({ species, setSpecies, project, taxa, layout, disabled
                     <option value="Select an option" disabled hidden>
                         Select an option
                     </option>
-                    {speciesOptions.map((option) => {
-                        return (
-                            <option key={option} value={option}>
-                                {option}
-                            </option>
-                        );
-                    })}
+                    {[...new Set(speciesOptions)].map((option, index) => (
+                        <option key={`${option}-${index}`} value={option}>
+                            {option}
+                        </option>
+                    ))}
                 </select>
             }
         />
@@ -624,6 +621,9 @@ export const checkToeCodeValidity = async (
     recapture,
 ) => {
     if (toeCode === undefined) toeCode = '';
+    if (toeCode.includes('C4') || toeCode.includes('D4')) {
+        notify(Type.error, 'Warning: C4 or D4 toes should not be clipped');
+    }
     if (toeCode.length < 2) {
         notify(Type.error, 'Toe Clip Code needs to be at least 2 characters long');
         return false;
@@ -682,41 +682,40 @@ const ToeClipCodeField = ({ toeCode, setToeCode, project, site, speciesCode, rec
     }, [recapture, speciesCode]);
 
     const generateNewToeCode = async () => {
-        if (toeCode === undefined) toeCode = '';
-        if (toeCode.includes('C4') || toeCode.includes('D4')) {
-            notify(Type.error, 'App does not generate toe clip codes with C4 or D4');
-        }
-        console.log(`Environment: ${environment}`);
-        const collectionName =
-            environment === 'live'
-                ? `${project.replace(/\s/g, '')}Data`
-                : `Test${project.replace(/\s/g, '')}Data`;
-        const lizardSnapshot = await getDocs(
-            query(
-                collection(db, collectionName),
-                where('site', '==', site),
-                where('speciesCode', '==', speciesCode),
-            ),
-        );
-        console.log(`${collectionName} from site ${site} with species code ${speciesCode}`);
-        const toeCodesArray = [];
-        lizardSnapshot.docs.forEach((document) => {
-            toeCodesArray.push(document.data().toeClipCode);
-        });
-        console.log(toeCodesArray);
-        const toeCodesTemplateSnapshot = await getDocs(
-            query(collection(db, 'AnswerSet'), where('set_name', '==', 'toe clip codes')),
-        );
-        for (const templateToeCode of toeCodesTemplateSnapshot.docs[0].data().answers) {
-            if (
-                !toeCodesArray.includes(templateToeCode.primary) &&
-                !templateToeCode.primary.includes('C4') &&
-                !templateToeCode.primary.includes('D4')
-            ) {
-                setToeCode(templateToeCode.primary);
-                setToeCodeIsValid(true);
-                return;
+        if (!(speciesCode === "" || speciesCode === null || speciesCode === undefined)) {
+            if (!toeCode) toeCode = '';
+            const collectionName = environment === 'live' ? `${project.replace(/\s/g, '')}Data` : `Test${project.replace(/\s/g, '')}Data`;
+            const lizardSnapshot = await getDocs(query(collection(db, collectionName), where('site', '==', site), where('speciesCode', '==', speciesCode)));
+            const toeCodesArray = lizardSnapshot.docs.map(doc => doc.data().toeClipCode);
+            const toeCodesTemplateSnapshot = await getDocs(query(collection(db, 'AnswerSet'), where('set_name', '==', 'toe clip codes')));
+            let workingToeCode = toeCode;
+
+            if (workingToeCode === '') {
+                for (const templateToeCode of toeCodesTemplateSnapshot.docs[0].data().answers) {
+                    if (!toeCodesArray.includes(templateToeCode.primary)) {
+                        workingToeCode = templateToeCode.primary;
+                        break;
+                    }
+                }
+            } else if (toeCodesArray.includes(workingToeCode)) {
+                let toeCodeChars = workingToeCode.split(/\d+/).filter(Boolean);
+                for (const templateToeCode of toeCodesTemplateSnapshot.docs[0].data().answers) {
+                    if (!toeCodeChars.some(char => templateToeCode.primary.includes(char))) {
+                        let tempToeCode = templateToeCode.primary + workingToeCode;
+                        let tempToeArray = tempToeCode.split(/([a-zA-Z]\d)/).filter(Boolean);
+                        tempToeArray.sort();
+                        tempToeCode = tempToeArray.join('');
+                        if (!toeCodesArray.includes(tempToeCode)) {
+                            workingToeCode = tempToeCode;
+                            break;
+                        }
+                    }
+                }
             }
+            setToeCode(workingToeCode);
+            setToeCodeIsValid(true);
+        } else {
+            notify(Type.error, 'Must selsect a species first.');
         }
     };
 
@@ -752,8 +751,8 @@ const ToeClipCodeField = ({ toeCode, setToeCode, project, site, speciesCode, rec
                     toeCodeIsValid === true
                         ? 'border-green-500 border-2'
                         : toeCodeIsValid === false
-                          ? 'border-red-500 border-2'
-                          : 'border-gray-500 border-2'
+                            ? 'border-red-500 border-2'
+                            : 'border-gray-500 border-2'
                 }
                 type="text"
                 value={toeCode || ''}
@@ -766,7 +765,6 @@ const ToeClipCodeField = ({ toeCode, setToeCode, project, site, speciesCode, rec
                                 environment,
                                 project,
                                 site,
-                                array,
                                 speciesCode,
                                 recapture,
                             ),

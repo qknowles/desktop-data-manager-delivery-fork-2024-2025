@@ -12,7 +12,7 @@ const style = {
 };
 
 const config = {
-    duration: 2000,
+    duration: 4000,
     style: style,
 };
 
