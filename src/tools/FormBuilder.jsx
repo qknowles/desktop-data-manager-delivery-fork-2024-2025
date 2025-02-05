@@ -13,7 +13,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [selectedData, setSelectedData] = useState('');
     const [editData, setEditData] = useState({});
     const [editModalVisible, setEditModalVisible] = useState(false);
-    const setShowSuccessPopup = false;
 
     // New Document Creation Modal state
     const [showNewDocumentModal, setShowNewDocumentModal] = useState(false);
@@ -22,7 +21,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [selectedArray, setSelectedArray] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [primaryFields, setPrimaryFields] = useState([]);
-    const setDeleteMode = '';
     const [showAddSiteModal, setShowAddSiteModal] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const setSites = [];
@@ -47,7 +45,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
     const [newArrayName, setNewArrayName] = useState('');
     const [primaryValues, setPrimaryValues] = useState([]);
     const [newPrimaryValue, setNewPrimaryValue] = useState('');
-    const successMessage = '';
     const [messageBox, setMessageBox] = useState({ show: false, text: '' });
     const [selectedSite, setSelectedSite] = useState('');
 
@@ -104,7 +101,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
             await fetchDocuments();
         }
         setShowDeleteConfirm(true);
-        setDeleteMode('');
     };
     const confirmDeleteArray = async () => {
         console.log('Selected values:', {
@@ -404,9 +400,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
                     `Document ${selectedDocument.set_name} updated successfully in Firebase.`,
                 );
                 triggerRerender();
-
-                // Show the success popup
-                setShowSuccessPopup(true);
 
                 // Close the edit modal after saving
                 setEditModalVisible(false);
@@ -1261,12 +1254,6 @@ export default function FormBuilder({ triggerRerender, modalStep, setModalStep }
                             />
                         </div>
                     </div>
-                </div>
-            )}
-
-            {successMessage && (
-                <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-md">
-                    {successMessage}
                 </div>
             )}
             {messageBox.show && (
