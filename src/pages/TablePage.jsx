@@ -69,9 +69,6 @@ export default function TablePage() {
 
     return (
         <PageWrapper>
-            {!labels || !entries.length ? (
-                <div>Loading...</div>
-            ) : (
                 <>
                     <FormBuilderModal
                         showModal={activeTool === 'formBuilder'}
@@ -148,7 +145,6 @@ export default function TablePage() {
                         </div>
                     </div>
                 </>
-            )}
         </PageWrapper>
     );
 }
