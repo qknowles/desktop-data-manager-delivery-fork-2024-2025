@@ -17,9 +17,7 @@ export default function LoginPage({ auth, onLogin }) {
 
             {/* Login Card Section */}
             <div className="m-5 p-10 rounded-lg shadow-md bg-white dark:bg-neutral-950 mx-auto w-full md:w-96">
-                <p className="text-center mb-5">
-                    {auth.loading ? LOADING_MESSAGE : LOGIN_MESSAGE}
-                </p>
+                <p className="text-center mb-5">{auth.loading ? LOADING_MESSAGE : LOGIN_MESSAGE}</p>
 
                 {/* Google Login Button */}
                 <Button

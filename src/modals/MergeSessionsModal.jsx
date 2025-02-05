@@ -2,7 +2,17 @@ import { useState, useEffect } from 'react';
 import InputLabel from '../components/InputLabel';
 import Modal from '../components/Modal';
 import InnerModalWrapper from './InnerModalWrapper';
-import { getDocs, collection, query, updateDoc, doc, where, writeBatch, orderBy, deleteDoc } from 'firebase/firestore';
+import {
+    getDocs,
+    collection,
+    query,
+    updateDoc,
+    doc,
+    where,
+    writeBatch,
+    orderBy,
+    deleteDoc,
+} from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAtomValue } from 'jotai';
 import { appMode, currentProjectName } from '../utils/jotai';
@@ -17,7 +27,12 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
     const environment = useAtomValue(appMode);
 
     const getSessionsFromFirestore = async () => {
-        const collectionSnapshot = await getDocs(query(collection(db, `${environment === 'test' ? 'Test' : ''}${project}Session`), orderBy('dateTime', 'desc')));
+        const collectionSnapshot = await getDocs(
+            query(
+                collection(db, `${environment === 'test' ? 'Test' : ''}${project}Session`),
+                orderBy('dateTime', 'desc'),
+            ),
+        );
         setSessions(collectionSnapshot.docs);
     };
 
@@ -25,61 +40,80 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
         if (showModal) getSessionsFromFirestore();
     }, [showModal]);
 
-    const updateSessions = async (
-        firstSession,
-        lastSession
-    ) => {
+    const updateSessions = async (firstSession, lastSession) => {
         const firstSessionSnapshot = sessions.filter(
-            (session) => session.data().dateTime === firstSession
+            (session) => session.data().dateTime === firstSession,
         )[0];
         const lastSessionSnapshot = sessions.filter(
-            (session) => session.data().dateTime === lastSession
+            (session) => session.data().dateTime === lastSession,
         )[0];
 
-        console.log('firstSession to merge into:')
-        console.log(firstSessionSnapshot.data())
-        console.log('lastSession to merge out of and dispose:')
-        console.log(lastSessionSnapshot.data())
-                
+        console.log('firstSession to merge into:');
+        console.log(firstSessionSnapshot.data());
+        console.log('lastSession to merge out of and dispose:');
+        console.log(lastSessionSnapshot.data());
+
         const newCommentsAboutTheArray = `${firstSessionSnapshot.data().commentsAboutTheArray}; ${
             lastSessionSnapshot.data().commentsAboutTheArray
         }`;
-        console.log(`updating first session ${firstSessionSnapshot.id} to contain comments: ${newCommentsAboutTheArray}`)
-        await updateDoc(doc(db, `${environment === 'test' ? 'Test' : ''}${project}Session`, firstSessionSnapshot.id), {
-            commentsAboutTheArray: newCommentsAboutTheArray
-        });
-        console.log(`deleting old session: ${lastSessionSnapshot.data().dateTime}`)
-        await deleteDoc(doc(db, `${environment === 'test' ? 'Test' : ''}${project}Session`, lastSessionSnapshot.id))
+        console.log(
+            `updating first session ${firstSessionSnapshot.id} to contain comments: ${newCommentsAboutTheArray}`,
+        );
+        await updateDoc(
+            doc(
+                db,
+                `${environment === 'test' ? 'Test' : ''}${project}Session`,
+                firstSessionSnapshot.id,
+            ),
+            {
+                commentsAboutTheArray: newCommentsAboutTheArray,
+            },
+        );
+        console.log(`deleting old session: ${lastSessionSnapshot.data().dateTime}`);
+        await deleteDoc(
+            doc(
+                db,
+                `${environment === 'test' ? 'Test' : ''}${project}Session`,
+                lastSessionSnapshot.id,
+            ),
+        );
     };
 
-    const updateSessionEntries =  async (firstSessionDateTime, lastSessionDateTime) => {
+    const updateSessionEntries = async (firstSessionDateTime, lastSessionDateTime) => {
         console.log(lastSessionDateTime);
-        console.log(`${environment === 'test' ? 'Test' : ''}${project}Data`)
-        const sessionDocuments = await getDocs(query(
-            collection(db, `${environment === 'test' ? 'Test' : ''}${project}Data`),
-            where('sessionDateTime', '==', lastSessionDateTime)
-        ))
+        console.log(`${environment === 'test' ? 'Test' : ''}${project}Data`);
+        const sessionDocuments = await getDocs(
+            query(
+                collection(db, `${environment === 'test' ? 'Test' : ''}${project}Data`),
+                where('sessionDateTime', '==', lastSessionDateTime),
+            ),
+        );
         const batch = writeBatch(db);
-        console.log(`updating these documents from ${lastSessionDateTime} to ${firstSessionDateTime}`)
-        console.log(sessionDocuments)
+        console.log(
+            `updating these documents from ${lastSessionDateTime} to ${firstSessionDateTime}`,
+        );
+        console.log(sessionDocuments);
         let firstSessionId = null;
-        sessions.forEach(sessionDocument => {
-            console.log(`comparing ${sessionDocument.data().dateTime} and ${firstSessionDateTime}`)
+        sessions.forEach((sessionDocument) => {
+            console.log(`comparing ${sessionDocument.data().dateTime} and ${firstSessionDateTime}`);
             if (sessionDocument.data().dateTime === firstSessionDateTime) {
                 firstSessionId = sessionDocument.data().sessionId;
-                console.log('is equal, setting sessionId')
+                console.log('is equal, setting sessionId');
                 return;
             }
-        })
-        sessionDocuments.forEach(document => {
-            batch.update(doc(db, `${environment === 'test' ? 'Test' : ''}${project}Data`, document.id), {
-                sessionDateTime: firstSessionDateTime,
-                dateTime: firstSessionDateTime,
-                sessionId: firstSessionId ?? new Date(firstSessionDateTime).getTime(), 
-            })
-        })
+        });
+        sessionDocuments.forEach((document) => {
+            batch.update(
+                doc(db, `${environment === 'test' ? 'Test' : ''}${project}Data`, document.id),
+                {
+                    sessionDateTime: firstSessionDateTime,
+                    dateTime: firstSessionDateTime,
+                    sessionId: firstSessionId ?? new Date(firstSessionDateTime).getTime(),
+                },
+            );
+        });
         await batch.commit();
-    }
+    };
 
     const mergeSessions = async () => {
         if (sessionOne === sessionTwo) {
@@ -99,8 +133,8 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
     };
 
     useEffect(() => {
-        sessions && sessions.forEach(entry => console.log(entry.data()))
-    }, [sessions])
+        sessions && sessions.forEach((entry) => console.log(entry.data()));
+    }, [sessions]);
 
     return (
         <div>
@@ -112,7 +146,7 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
                 onOkay={() => closeModal()}
                 buttonOptions={{
                     cancel: 'Close',
-                    okay: ''
+                    okay: '',
                 }}
             >
                 <InnerModalWrapper>

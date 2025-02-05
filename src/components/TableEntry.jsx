@@ -7,7 +7,6 @@ import { CheckIcon, CloseIcon, DeleteIcon, EditIcon } from '../assets/icons';
 import { getKey, getKeys, getLabel } from '../const/tableLabels';
 import { getSessionEntryCount, startEntryOperation } from '../utils/firestore';
 import { Type, notify } from './Notifier';
-import { FormField } from './FormFields';
 import '../styles/Table.css';
 import React from 'react';
 
@@ -18,15 +17,10 @@ const FALSE_KEYS = ['N', 'n', 'F', 'f'];
 export const getValue = (entry, column) => {
     const field = entry._document.data.value.mapValue.fields[getKey(column, name)];
     return field ? field.stringValue : 'N/A';
-}
+};
 
 export const TableEntry = forwardRef((props, ref) => {
-    const {
-        entrySnapshot,
-        shownColumns,
-        removeEntry: removeEntryFromUI,
-        index
-    } = props;
+    const { entrySnapshot, shownColumns, removeEntry: removeEntryFromUI, index } = props;
 
     const [entryUIState, setEntryUIState] = useState('viewing');
     const [entryData, setEntryData] = useState(entrySnapshot.data());
@@ -44,21 +38,28 @@ export const TableEntry = forwardRef((props, ref) => {
         setEntryUIState('deleting');
         if (entrySnapshot.ref.parent.id.includes('Session')) {
             const entryCount = await getSessionEntryCount(entrySnapshot);
-            setDeleteMessage(`Are you sure you want to delete this session and its ${entryCount} animal entries?`);
+            setDeleteMessage(
+                `Are you sure you want to delete this session and its ${entryCount} animal entries?`,
+            );
         }
     };
 
     const handleSaveClick = () => {
-        const operationType = entryUIState === 'editing'
-            ? (tableName.includes('Session') ? 'uploadSessionEdits' : 'uploadEntryEdits')
-            : (tableName.includes('Session') ? 'deleteSession' : 'deleteEntry');
+        const operationType =
+            entryUIState === 'editing'
+                ? tableName.includes('Session')
+                    ? 'uploadSessionEdits'
+                    : 'uploadEntryEdits'
+                : tableName.includes('Session')
+                  ? 'deleteSession'
+                  : 'deleteEntry';
 
         startEntryOperation(operationType, {
             entrySnapshot,
             entryData,
             setEntryUIState,
-            removeEntryFromUI
-        }).then(response => notify(...response));
+            removeEntryFromUI,
+        }).then((response) => notify(...response));
     };
 
     const handleCancelClick = () => {
@@ -70,10 +71,10 @@ export const TableEntry = forwardRef((props, ref) => {
         <motion.tr
             className="relative hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-200 ease-in-out"
             variants={tableRows}
-            initial='initial'
-            animate='visible'
+            initial="initial"
+            animate="visible"
             custom={index}
-            exit='exit'
+            exit="exit"
             ref={ref}
         >
             <Actions
@@ -84,31 +85,40 @@ export const TableEntry = forwardRef((props, ref) => {
                 entryUIState={entryUIState}
                 deleteMessage={deleteMessage}
             />
-            {keys.map(key => (
-                shownColumns.includes(getLabel(key)) && (
-                    <EntryItem
-                        key={key}
-                        entrySnapshot={entrySnapshot}
-                        entryUIState={entryUIState}
-                        dbKey={key}
-                        entryData={entryData}
-                        setEntryData={setEntryData}
-                        className={getLabel(key) === 'Date & Time' ? 'dateTimeColumn' :
-                            getLabel(key) === 'Site' ? 'siteColumn' :
-                                getLabel(key) === 'Year' ? 'yearColumn' :
-                                    getLabel(key) === 'Taxa' ? 'taxaColumn' :
-                                        getLabel(key) === 'Genus' ? 'genusColumn' :
-                                            getLabel(key) === 'Species' ? 'speciesColumn' : ''
-                        }
-                    />
-                )
-            ))}
+            {keys.map(
+                (key) =>
+                    shownColumns.includes(getLabel(key)) && (
+                        <EntryItem
+                            key={key}
+                            entrySnapshot={entrySnapshot}
+                            entryUIState={entryUIState}
+                            dbKey={key}
+                            entryData={entryData}
+                            setEntryData={setEntryData}
+                            className={
+                                getLabel(key) === 'Date & Time'
+                                    ? 'dateTimeColumn'
+                                    : getLabel(key) === 'Site'
+                                      ? 'siteColumn'
+                                      : getLabel(key) === 'Year'
+                                        ? 'yearColumn'
+                                        : getLabel(key) === 'Taxa'
+                                          ? 'taxaColumn'
+                                          : getLabel(key) === 'Genus'
+                                            ? 'genusColumn'
+                                            : getLabel(key) === 'Species'
+                                              ? 'speciesColumn'
+                                              : ''
+                            }
+                        />
+                    ),
+            )}
         </motion.tr>
     );
 });
 
-const EntryItem = ({ entrySnapshot, dbKey, entryUIState, setEntryData, entryData, className}) => {
-    const [editable, setEditable] = useState(true);
+const EntryItem = ({ dbKey, entryUIState, setEntryData, entryData, className }) => {
+    const editable = true;
 
     const onChangeHandler = (e) => {
         const value = e.target.value.slice(-1);
@@ -116,26 +126,40 @@ const EntryItem = ({ entrySnapshot, dbKey, entryUIState, setEntryData, entryData
         const isTrueKey = TRUE_KEYS.includes(value);
         const isFalseKey = FALSE_KEYS.includes(value);
 
-        setEntryData(prev => ({
+        setEntryData((prev) => ({
             ...prev,
-            [dbKey]: isBinaryKey ? (isTrueKey ? 'true' : (isFalseKey ? 'false' : prev[dbKey])) : e.target.value,
+            [dbKey]: isBinaryKey
+                ? isTrueKey
+                    ? 'true'
+                    : isFalseKey
+                      ? 'false'
+                      : prev[dbKey]
+                : e.target.value,
         }));
     };
 
-    const onClickHandler = (e) => {
+    const onClickHandler = () => {
         if (dbKey === 'year' && entryUIState === 'editing') {
-            notify(Type.error, "Editing the year directly is not supported. Please edit the date instead.");
+            notify(
+                Type.error,
+                'Editing the year directly is not supported. Please edit the date instead.',
+            );
         }
     };
 
-    let disabled = dbKey === 'year' || entryUIState === 'viewing' || (entryUIState === 'editing' && !editable) || entryUIState === 'deleting';
+    let disabled =
+        dbKey === 'year' ||
+        entryUIState === 'viewing' ||
+        (entryUIState === 'editing' && !editable) ||
+        entryUIState === 'deleting';
 
     const size = entryData[dbKey] ? String(entryData[dbKey]).length : 1;
 
     return (
-
         //<td className="text-center border-b border-neutral-400 dark:border-neutral-600 p-1">
-        <td className={`text-left border-b border-neutral-400 dark:border-neutral-600 p-1 ${className || ''}`}>
+        <td
+            className={`text-left border-b border-neutral-400 dark:border-neutral-600 p-1 ${className || ''}`}
+        >
             <input
                 readOnly={disabled}
                 className="pl-2 w-full read-only:bg-transparent read-only:border-transparent read-only:focus:outline-none"
@@ -149,44 +173,60 @@ const EntryItem = ({ entrySnapshot, dbKey, entryUIState, setEntryData, entryData
 };
 
 const Actions = ({
-                     onEditClick,
-                     onDeleteClick,
-                     onSaveClick,
-                     onCancelClick,
-                     entryUIState,
-                     deleteMessage
-                 }) => {
+    onEditClick,
+    onDeleteClick,
+    onSaveClick,
+    onCancelClick,
+    entryUIState,
+    deleteMessage,
+}) => {
     return (
         <td className="border-b border-neutral-400 dark:border-neutral-600 p-2">
             <div className="flex flex-row w-full justify-around">
                 <AnimatePresence>
                     {entryUIState === 'deleting' && (
                         <motion.div
-                            key='deleteMsg'
+                            key="deleteMsg"
                             className="absolute text-lg left-8 -top-3 z-10 px-2 rounded-md drop-shadow-xl border-[1px] bg-red-800/10 backdrop-blur border-red-800 shadow-lg  shadow-red-800/25 leading-tight"
                             initial={{ left: '-2rem', opacity: 0 }}
                             animate={{ left: '2rem', opacity: 1 }}
-                            exit={{ left: '-20rem', opacity: 0, transition: { opacity: { duration: 0.25 } } }}
+                            exit={{
+                                left: '-20rem',
+                                opacity: 0,
+                                transition: { opacity: { duration: 0.25 } },
+                            }}
                         >
                             {deleteMessage}
                         </motion.div>
                     )}
                     {entryUIState === 'viewing' && (
                         <>
-                            <div className="w-5 h-5 hover:scale-125 transition hover:cursor-pointer" onClick={onEditClick}>
+                            <div
+                                className="w-5 h-5 hover:scale-125 transition hover:cursor-pointer"
+                                onClick={onEditClick}
+                            >
                                 <EditIcon />
                             </div>
-                            <div className="w-5 h-5 hover:scale-125 transition hover:cursor-pointer" onClick={onDeleteClick}>
+                            <div
+                                className="w-5 h-5 hover:scale-125 transition hover:cursor-pointer"
+                                onClick={onDeleteClick}
+                            >
                                 <DeleteIcon />
                             </div>
                         </>
                     )}
                     {(entryUIState === 'editing' || entryUIState === 'deleting') && (
                         <>
-                            <div className="w-5 h-5 hover:scale-125 transition hover:cursor-pointer" onClick={onSaveClick}>
+                            <div
+                                className="w-5 h-5 hover:scale-125 transition hover:cursor-pointer"
+                                onClick={onSaveClick}
+                            >
                                 <CheckIcon />
                             </div>
-                            <div className="w-5 h-5 hover:scale-125 transition hover:cursor-pointer" onClick={onCancelClick}>
+                            <div
+                                className="w-5 h-5 hover:scale-125 transition hover:cursor-pointer"
+                                onClick={onCancelClick}
+                            >
                                 <CloseIcon />
                             </div>
                         </>
