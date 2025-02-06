@@ -14,7 +14,8 @@ import { Type, notify } from './Notifier';
 import { appMode } from '../utils/jotai';
 import { getDocs, query, collection, where } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import { useState, useEffect } from 'react';
+import { React, useState, useEffect } from 'react';
+import React from 'react';
 import { useAtomValue } from 'jotai';
 import { motion, AnimatePresence } from 'framer-motion';
 
