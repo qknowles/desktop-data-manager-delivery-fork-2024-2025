@@ -69,82 +69,82 @@ export default function TablePage() {
 
     return (
         <PageWrapper>
-                <>
-                    <FormBuilderModal
-                        showModal={activeTool === 'formBuilder'}
-                        onCancel={() => setActiveTool('none')}
-                        onOkay={() => setActiveTool('none')}
-                        triggerRerender={triggerRerender}
+            <>
+                <FormBuilderModal
+                    showModal={activeTool === 'formBuilder'}
+                    onCancel={() => setActiveTool('none')}
+                    onOkay={() => setActiveTool('none')}
+                    triggerRerender={triggerRerender}
+                />
+                <ExportModal
+                    showModal={activeTool === 'export'}
+                    onCancel={() => setActiveTool('none')}
+                />
+                <DataInputModal
+                    showModal={activeTool === 'newData'}
+                    closeModal={() => setActiveTool('none')}
+                />
+                <MergeSessionsModal
+                    showModal={activeTool === 'merge'}
+                    closeModal={() => setActiveTool('none')}
+                />
+                <div className="flex justify-between items-center overflow-auto dark:bg-neutral-700">
+                    <TabBar
+                        tabs={tabsData.map((tab) => ({
+                            ...tab,
+                            active: tab.text === tableName,
+                            onClick: () => setTableName(tab.text),
+                        }))}
                     />
-                    <ExportModal
-                        showModal={activeTool === 'export'}
-                        onCancel={() => setActiveTool('none')}
-                    />
-                    <DataInputModal
-                        showModal={activeTool === 'newData'}
-                        closeModal={() => setActiveTool('none')}
-                    />
-                    <MergeSessionsModal
-                        showModal={activeTool === 'merge'}
-                        closeModal={() => setActiveTool('none')}
-                    />
-                    <div className="flex justify-between items-center overflow-auto dark:bg-neutral-700">
-                        <TabBar
-                            tabs={tabsData.map((tab) => ({
-                                ...tab,
-                                active: tab.text === tableName,
-                                onClick: () => setTableName(tab.text),
-                            }))}
+                    <div className="flex items-center px-5 space-x-5">
+                        <ProjectField
+                            project={currentProject.replace(/([a-z])([A-Z])/g, '$1 $2')}
+                            setProject={(e) => setCurrentProject(e.replace(/ /g, ''))}
                         />
-                        <div className="flex items-center px-5 space-x-5">
-                            <ProjectField
-                                project={currentProject.replace(/([a-z])([A-Z])/g, '$1 $2')}
-                                setProject={(e) => setCurrentProject(e.replace(/ /g, ''))}
-                            />
-                        </div>
                     </div>
+                </div>
 
-                    <div>
-                        <DataManager
-                            name={tableName}
-                            labels={labels}
-                            entries={entries}
-                            setEntries={setEntries}
-                        />
-                        <div className="flex justify-between overflow-auto dark:bg-neutral-800">
-                            <TableTools>
-                                <Button
-                                    flexible={true}
-                                    text="Form Builder"
-                                    icon={<FormBuilderIcon />}
-                                    onClick={() => setActiveTool('formBuilder')}
-                                />
-                                <Button
-                                    flexible={true}
-                                    text="Export to CSV"
-                                    icon={<ExportIcon />}
-                                    onClick={() => setActiveTool('export')}
-                                />
-                                <Button
-                                    flexible={true}
-                                    text="New Data Entry"
-                                    icon={<NewDataIcon />}
-                                    onClick={() => setActiveTool('newData')}
-                                />
-                                <Button
-                                    flexible={true}
-                                    text="Merge Sessions"
-                                    icon={<MergeIcon />}
-                                    onClick={() => setActiveTool('merge')}
-                                />
-                            </TableTools>
-                            <Pagination
-                                loadPrevBatch={loadPreviousBatch}
-                                loadNextBatch={loadNextBatch}
+                <div>
+                    <DataManager
+                        name={tableName}
+                        labels={labels}
+                        entries={entries}
+                        setEntries={setEntries}
+                    />
+                    <div className="flex justify-between overflow-auto dark:bg-neutral-800">
+                        <TableTools>
+                            <Button
+                                flexible={true}
+                                text="Form Builder"
+                                icon={<FormBuilderIcon />}
+                                onClick={() => setActiveTool('formBuilder')}
                             />
-                        </div>
+                            <Button
+                                flexible={true}
+                                text="Export to CSV"
+                                icon={<ExportIcon />}
+                                onClick={() => setActiveTool('export')}
+                            />
+                            <Button
+                                flexible={true}
+                                text="New Data Entry"
+                                icon={<NewDataIcon />}
+                                onClick={() => setActiveTool('newData')}
+                            />
+                            <Button
+                                flexible={true}
+                                text="Merge Sessions"
+                                icon={<MergeIcon />}
+                                onClick={() => setActiveTool('merge')}
+                            />
+                        </TableTools>
+                        <Pagination
+                            loadPrevBatch={loadPreviousBatch}
+                            loadNextBatch={loadNextBatch}
+                        />
                     </div>
-                </>
+                </div>
+            </>
         </PageWrapper>
     );
 }
