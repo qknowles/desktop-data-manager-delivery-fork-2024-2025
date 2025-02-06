@@ -123,7 +123,9 @@ export default function NewEntryForm() {
                         critter={selectedCritter}
                         project={project}
                         session={selectedSession}
-                        reset={() => {setSelectedCritter('');}}
+                        reset={() => {
+                            setSelectedCritter('');
+                        }}
                     />
                 )}
             </div>

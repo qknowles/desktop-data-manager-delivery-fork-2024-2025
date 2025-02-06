@@ -14,7 +14,7 @@ import { Type, notify } from './Notifier';
 import { appMode } from '../utils/jotai';
 import { getDocs, query, collection, where } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import { useAtomValue } from 'jotai';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -683,12 +683,23 @@ const ToeClipCodeField = ({ toeCode, setToeCode, project, site, speciesCode, rec
     }, [recapture, speciesCode]);
 
     const generateNewToeCode = async () => {
-        if (!(speciesCode === "" || speciesCode === null || speciesCode === undefined)) {
+        if (!(speciesCode === '' || speciesCode === null || speciesCode === undefined)) {
             if (!toeCode) toeCode = '';
-            const collectionName = environment === 'live' ? `${project.replace(/\s/g, '')}Data` : `Test${project.replace(/\s/g, '')}Data`;
-            const lizardSnapshot = await getDocs(query(collection(db, collectionName), where('site', '==', site), where('speciesCode', '==', speciesCode)));
-            const toeCodesArray = lizardSnapshot.docs.map(doc => doc.data().toeClipCode);
-            const toeCodesTemplateSnapshot = await getDocs(query(collection(db, 'AnswerSet'), where('set_name', '==', 'toe clip codes')));
+            const collectionName =
+                environment === 'live'
+                    ? `${project.replace(/\s/g, '')}Data`
+                    : `Test${project.replace(/\s/g, '')}Data`;
+            const lizardSnapshot = await getDocs(
+                query(
+                    collection(db, collectionName),
+                    where('site', '==', site),
+                    where('speciesCode', '==', speciesCode),
+                ),
+            );
+            const toeCodesArray = lizardSnapshot.docs.map((doc) => doc.data().toeClipCode);
+            const toeCodesTemplateSnapshot = await getDocs(
+                query(collection(db, 'AnswerSet'), where('set_name', '==', 'toe clip codes')),
+            );
             let workingToeCode = toeCode;
 
             if (workingToeCode === '') {
@@ -701,7 +712,7 @@ const ToeClipCodeField = ({ toeCode, setToeCode, project, site, speciesCode, rec
             } else if (toeCodesArray.includes(workingToeCode)) {
                 let toeCodeChars = workingToeCode.split(/\d+/).filter(Boolean);
                 for (const templateToeCode of toeCodesTemplateSnapshot.docs[0].data().answers) {
-                    if (!toeCodeChars.some(char => templateToeCode.primary.includes(char))) {
+                    if (!toeCodeChars.some((char) => templateToeCode.primary.includes(char))) {
                         let tempToeCode = templateToeCode.primary + workingToeCode;
                         let tempToeArray = tempToeCode.split(/([a-zA-Z]\d)/).filter(Boolean);
                         tempToeArray.sort();
@@ -752,8 +763,8 @@ const ToeClipCodeField = ({ toeCode, setToeCode, project, site, speciesCode, rec
                     toeCodeIsValid === true
                         ? 'border-green-500 border-2'
                         : toeCodeIsValid === false
-                            ? 'border-red-500 border-2'
-                            : 'border-gray-500 border-2'
+                          ? 'border-red-500 border-2'
+                          : 'border-gray-500 border-2'
                 }
                 type="text"
                 value={toeCode || ''}
