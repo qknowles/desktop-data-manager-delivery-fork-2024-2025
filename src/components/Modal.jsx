@@ -118,7 +118,8 @@ function ModalContent({ children }) {
 }
 
 function ModalFooter({ children }) {
-    console.log('ModalFooter children:', children);
+    // Non-functional testing purposes only
+    // console.log('ModalFooter children:', children);
     return (
         <div className="bg-neutral-100 dark:bg-neutral-900 p-4 flex justify-end space-x-5">
             {children}

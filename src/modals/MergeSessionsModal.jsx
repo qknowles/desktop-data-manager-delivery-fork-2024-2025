@@ -48,17 +48,19 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
             (session) => session.data().dateTime === lastSession,
         )[0];
 
-        console.log('firstSession to merge into:');
-        console.log(firstSessionSnapshot.data());
-        console.log('lastSession to merge out of and dispose:');
-        console.log(lastSessionSnapshot.data());
+        // Non-functional testing purposes only
+        // console.log('firstSession to merge into:');
+        // console.log(firstSessionSnapshot.data());
+        // console.log('lastSession to merge out of and dispose:');
+        // console.log(lastSessionSnapshot.data());
 
         const newCommentsAboutTheArray = `${firstSessionSnapshot.data().commentsAboutTheArray}; ${
             lastSessionSnapshot.data().commentsAboutTheArray
         }`;
-        console.log(
-            `updating first session ${firstSessionSnapshot.id} to contain comments: ${newCommentsAboutTheArray}`,
-        );
+        // Non-functional testing purposes only
+        // console.log(
+        //     `updating first session ${firstSessionSnapshot.id} to contain comments: ${newCommentsAboutTheArray}`,
+        // );
         await updateDoc(
             doc(
                 db,
@@ -69,7 +71,8 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
                 commentsAboutTheArray: newCommentsAboutTheArray,
             },
         );
-        console.log(`deleting old session: ${lastSessionSnapshot.data().dateTime}`);
+        // Non-functional testing purposes only
+        // console.log(`deleting old session: ${lastSessionSnapshot.data().dateTime}`);
         await deleteDoc(
             doc(
                 db,
@@ -80,8 +83,9 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
     };
 
     const updateSessionEntries = async (firstSessionDateTime, lastSessionDateTime) => {
-        console.log(lastSessionDateTime);
-        console.log(`${environment === 'test' ? 'Test' : ''}${project}Data`);
+        // Non-functional testing purposes only
+        // console.log(lastSessionDateTime);
+        // console.log(`${environment === 'test' ? 'Test' : ''}${project}Data`);
         const sessionDocuments = await getDocs(
             query(
                 collection(db, `${environment === 'test' ? 'Test' : ''}${project}Data`),
@@ -89,16 +93,19 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
             ),
         );
         const batch = writeBatch(db);
-        console.log(
-            `updating these documents from ${lastSessionDateTime} to ${firstSessionDateTime}`,
-        );
-        console.log(sessionDocuments);
+        // Non-functional testing purposes only
+        // console.log(
+        //     `updating these documents from ${lastSessionDateTime} to ${firstSessionDateTime}`,
+        // );
+        // console.log(sessionDocuments);
         let firstSessionId = null;
         sessions.forEach((sessionDocument) => {
-            console.log(`comparing ${sessionDocument.data().dateTime} and ${firstSessionDateTime}`);
+            // Non-functional testing purposes only
+            // console.log(`comparing ${sessionDocument.data().dateTime} and ${firstSessionDateTime}`);
             if (sessionDocument.data().dateTime === firstSessionDateTime) {
                 firstSessionId = sessionDocument.data().sessionId;
-                console.log('is equal, setting sessionId');
+                // Non-functional testing purposes only
+                // console.log('is equal, setting sessionId');
                 return;
             }
         });
@@ -113,28 +120,41 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
             );
         });
         await batch.commit();
+        notify(Type.success, 'Selected sessions merged.');
+        closeModal();
     };
 
     const mergeSessions = async () => {
         if (sessionOne === sessionTwo) {
-            notify(Type.error, 'Selected sessions are the same, merge failed');
+            notify(Type.error, 'Selected sessions are the same, merge failed.');
             return;
         }
+
+        const sessionOneSplit = sessionOne.split(' | ');
+        const sessionTwoSplit = sessionTwo.split(' | ');
+
+    
+        if (sessionOneSplit[1] !== sessionTwoSplit[1] || sessionOneSplit[2] !== sessionTwoSplit[2]) {
+            notify(Type.error, 'Selected sessions must be of the same site and array, merge failed.');
+            return;
+        }
+
         const firstSession =
-            new Date(sessionOne).getTime() < new Date(sessionTwo).getTime()
-                ? sessionOne
-                : sessionTwo;
+            new Date(sessionOneSplit[0]).getTime() < new Date(sessionTwo).getTime()
+                ? sessionOneSplit[0]
+                : sessionTwoSplit[0];
         const lastSession =
-            new Date(sessionOne).getTime() > new Date(sessionTwo).getTime()
-                ? sessionOne
-                : sessionTwo;
+            new Date(sessionOneSplit[0]).getTime() > new Date(sessionTwo).getTime()
+                ? sessionOneSplit[0]
+                : sessionTwoSplit[0];
         updateSessionEntries(firstSession, lastSession);
         updateSessions(firstSession, lastSession);
     };
 
-    useEffect(() => {
-        sessions && sessions.forEach((entry) => console.log(entry.data()));
-    }, [sessions]);
+    // Non-functional testing purposes only
+    // useEffect(() => {
+    //     sessions && sessions.forEach((entry) => console.log(entry.data()));
+    // }, [sessions]);
 
     return (
         <div>
@@ -165,7 +185,7 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
                                         </option>
                                         {sessions.map((documentSnapshot) => (
                                             <option key={documentSnapshot.id}>
-                                                {documentSnapshot.data().dateTime}
+                                                {documentSnapshot.data().dateTime + " | " + documentSnapshot.data().site + " | Array-" + documentSnapshot.data().array}
                                             </option>
                                         ))}
                                     </select>
@@ -184,7 +204,7 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
                                         </option>
                                         {sessions.map((documentSnapshot) => (
                                             <option key={documentSnapshot.id}>
-                                                {documentSnapshot.data().dateTime}
+                                                {documentSnapshot.data().dateTime + " | " + documentSnapshot.data().site + " | Array-" + documentSnapshot.data().array}
                                             </option>
                                         ))}
                                     </select>
