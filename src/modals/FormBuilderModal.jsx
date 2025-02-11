@@ -11,7 +11,8 @@ export default function FormBuilderModal({ showModal, onCancel, onOkay, triggerR
         }
     };
 
-    console.log('Rendering FormBuilderModal - Current modalStep:', modalStep);
+    // Non-functional testing purposes only
+    // console.log('Rendering FormBuilderModal - Current modalStep:', modalStep);
 
     return (
         <Modal
