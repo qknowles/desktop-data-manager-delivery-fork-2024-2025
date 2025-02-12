@@ -33,12 +33,16 @@ export default function NewEntryForm() {
     const sessionIndexMap = sessions.map((index) => index);
 
     useEffect(() => {
+        console.log("Getting sessions for:", environment, project.replace(/\s/g, ''), year);
         getSessionsByProjectAndYear(environment, project.replace(/\s/g, ''), year).then(
             (sessions) => {
+                console.log("Retrieved sessions:", sessions);
                 if (sessions.length > 0) {
+                    console.log("First session data:", sessions[0].data());
                     setSessions(sessions);
                     setSelectedSessionIndex(0);
                 } else {
+                    console.log("No sessions found");
                     setSessions([]);
                     setSelectedSessionIndex(null);
                 }
