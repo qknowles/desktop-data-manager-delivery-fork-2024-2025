@@ -49,7 +49,6 @@ export default function NewEntryForm() {
             },
         );
     }, [project, year]);
-
     const activeSessions = sessions.map((session) => {
         return session.data().dateTime;
     });
@@ -62,7 +61,7 @@ export default function NewEntryForm() {
         array: '',
         commentsAboutTheArray: '',
     };
-
+    console.log("Current selected session:", selectedSession);
     useEffect(() => {
         setSelectedCritter('');
     }, [selectedSession.dateTime]);
@@ -200,26 +199,21 @@ const CritterForm = ({ critter, project, session, reset }) => {
     };
 
     useEffect(() => {
-        console.log(session);
-        let tempEntry = dataObjTemplate;
-        tempEntry.sessionDateTime = session.dateTime;
-        tempEntry.sessionId = session.sessionId;
-        tempEntry.dateTime = session.dateTime;
-        tempEntry.site = session.site;
-        tempEntry.array = session.array;
-        tempEntry.taxa = critter;
-        tempEntry.year = session.year;
+        console.log('Initializing entry with session:', session);
+        const tempEntry = {
+            ...dataObjTemplate,
+            sessionDateTime: session.dateTime,  // This is what connects entry to session
+            dateTime: session.dateTime,
+            site: session.site,
+            array: session.array,
+            taxa: critter,
+            year: session.year
+        };
+    
+        console.log('Created temp entry:', tempEntry);
         setEntry(tempEntry);
         hydrateSpeciesArrays(project, critter);
-    }, [critter]);
-
-    const setField = (key, value) => {
-        setEntry((entry) => ({
-            ...entry,
-            [key]: value,
-        }));
-    };
-
+    }, [critter, session]);
     const hydrateSpeciesArrays = async (project, taxa) => {
         setSpeciesArrayPromise(getSpeciesCodesForProjectByTaxa(project, taxa));
     };
@@ -234,6 +228,11 @@ const CritterForm = ({ critter, project, session, reset }) => {
     };
 
     const addEntry = async () => {
+        console.log("Attempting to add entry:");
+        console.log("- Entry data:", entry);
+        console.log("- Project:", project);
+        console.log("- Environment:", environment);
+        console.log("- Session data:", session); 
         if (verifyForm(critter, entry)) {
             if (await uploadNewEntry(entry, project, environment)) {
                 notify(Type.success, 'Successfully uploaded entry to session');
@@ -249,22 +248,25 @@ const CritterForm = ({ critter, project, session, reset }) => {
                     const disabled = session[key];
                     return (
                         <FormField
-                            key={index}
-                            disabled={disabled}
-                            fieldName={key}
-                            layout="vertical"
-                            value={entry[key]}
-                            setValue={(value) => {
-                                setField(key, value);
-                            }}
-                            site={session.site}
-                            array={session.array}
-                            project={project}
-                            taxa={critter}
-                            entry={entry}
-                            addEntry={addEntry}
-                            speciesArray={speciesArrayPromise}
-                        />
+                        key={index}
+                        disabled={disabled}
+                        fieldName={key}
+                        layout="vertical"
+                        value={entry[key]}
+                        setValue={(value) => {
+                            setEntry(prev => ({
+                                ...prev,
+                                [key]: value
+                            }));
+                        }}
+                        site={session.site}
+                        array={session.array}
+                        project={project}
+                        taxa={critter}
+                        entry={entry}
+                        addEntry={addEntry}
+                        speciesArray={speciesArrayPromise}
+                    />
                     );
                 })}
             </div>
@@ -279,12 +281,31 @@ const CritterForm = ({ critter, project, session, reset }) => {
 };
 
 const SessionSummary = ({ session }) => {
-    const date = new Date(session.dateTime);
-    const month = date.toLocaleString('default', { month: 'long' });
-    const day = date.getDate();
-    const year = date.getFullYear();
-    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const formattedDate = `${month} ${day}, ${year} ${time}`;
+    if (!session || session.dateTime === 'Default') {
+        return (
+            <div className="flex-col space-y-1">
+                <h1 className="heading">Session Summary</h1>
+                <p>No session selected</p>
+            </div>
+        );
+    }
+
+    let formattedDate;
+    try {
+        const date = new Date(session.dateTime);
+        if (!isNaN(date.getTime())) {  // Check if date is valid
+            const month = date.toLocaleString('default', { month: 'long' });
+            const day = date.getDate();
+            const year = date.getFullYear();
+            const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            formattedDate = `${month} ${day}, ${year} ${time}`;
+        } else {
+            formattedDate = 'Invalid Date';
+        }
+    } catch (error) {
+        formattedDate = 'Invalid Date';
+    }
+
     return (
         <div className="flex-col space-y-1">
             <h1 className="heading">Session Summary</h1>
@@ -294,31 +315,31 @@ const SessionSummary = ({ session }) => {
             </div>
             <div className="flex justify-between">
                 <p>Recorder</p>
-                <p>{session.recorder}</p>
+                <p>{session.recorder || 'Not set'}</p>
             </div>
             <div className="flex justify-between">
                 <p>Handler</p>
-                <p>{session.handler}</p>
+                <p>{session.handler || 'Not set'}</p>
             </div>
             <div className="flex justify-between">
                 <p>Site</p>
-                <p>{session.site}</p>
+                <p>{session.site || 'Not set'}</p>
             </div>
             <div className="flex justify-between">
                 <p>Array</p>
-                <p>{session.array}</p>
+                <p>{session.array || 'Not set'}</p>
             </div>
             <div className="flex justify-between">
                 <p>No Captures</p>
-                <p>{session.noCaptures}</p>
+                <p>{session.noCaptures || 'Not set'}</p>
             </div>
             <div className="flex justify-between">
                 <p>Trap Status</p>
-                <p>{session.trapStatus}</p>
+                <p>{session.trapStatus || 'Not set'}</p>
             </div>
             <div className="flex justify-between">
                 <p>Comments</p>
-                <p>{session.commentsAboutTheArray}</p>
+                <p>{session.commentsAboutTheArray || 'Not set'}</p>
             </div>
         </div>
     );
