@@ -1,4 +1,4 @@
-import { useEffect, useState, forwardRef } from 'react';
+import { useMemo, useState, forwardRef } from 'react';
 import { useAtomValue } from 'jotai';
 import { currentTableName } from '../utils/jotai';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -24,13 +24,10 @@ export const TableEntry = forwardRef((props, ref) => {
 
     const [entryUIState, setEntryUIState] = useState('viewing');
     const [entryData, setEntryData] = useState(entrySnapshot.data());
-    const [keys, setKeys] = useState([]);
     const tableName = useAtomValue(currentTableName);
     const [deleteMessage, setDeleteMessage] = useState('Are you sure you want to delete this row?');
 
-    useEffect(() => {
-        setKeys(getKeys(tableName));
-    }, [tableName]);
+    const keys = useMemo(() => getKeys(tableName), [tableName]);
 
     const handleEditClick = () => setEntryUIState('editing');
 
@@ -51,8 +48,8 @@ export const TableEntry = forwardRef((props, ref) => {
                     ? 'uploadSessionEdits'
                     : 'uploadEntryEdits'
                 : tableName.includes('Session')
-                  ? 'deleteSession'
-                  : 'deleteEntry';
+                    ? 'deleteSession'
+                    : 'deleteEntry';
 
         startEntryOperation(operationType, {
             entrySnapshot,
@@ -99,16 +96,16 @@ export const TableEntry = forwardRef((props, ref) => {
                                 getLabel(key) === 'Date & Time'
                                     ? 'dateTimeColumn'
                                     : getLabel(key) === 'Site'
-                                      ? 'siteColumn'
-                                      : getLabel(key) === 'Year'
-                                        ? 'yearColumn'
-                                        : getLabel(key) === 'Taxa'
-                                          ? 'taxaColumn'
-                                          : getLabel(key) === 'Genus'
-                                            ? 'genusColumn'
-                                            : getLabel(key) === 'Species'
-                                              ? 'speciesColumn'
-                                              : ''
+                                        ? 'siteColumn'
+                                        : getLabel(key) === 'Year'
+                                            ? 'yearColumn'
+                                            : getLabel(key) === 'Taxa'
+                                                ? 'taxaColumn'
+                                                : getLabel(key) === 'Genus'
+                                                    ? 'genusColumn'
+                                                    : getLabel(key) === 'Species'
+                                                        ? 'speciesColumn'
+                                                        : ''
                             }
                         />
                     ),
@@ -132,8 +129,8 @@ const EntryItem = ({ dbKey, entryUIState, setEntryData, entryData, className }) 
                 ? isTrueKey
                     ? 'true'
                     : isFalseKey
-                      ? 'false'
-                      : prev[dbKey]
+                        ? 'false'
+                        : prev[dbKey]
                 : e.target.value,
         }));
     };
