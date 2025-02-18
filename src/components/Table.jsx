@@ -48,10 +48,12 @@ export const Table = ({ labels, columns, entries, name, setEntries }) => {
         document.body.removeChild(measureDiv);
         return newWidths;
     };
-    // Initialize column widths on mount and when data changes
+
     useEffect(() => {
         const initialWidths = calculateColumnWidths();
-        setColumnWidths(initialWidths);
+        setColumnWidths((prevWidths) => {
+            return JSON.stringify(prevWidths) !== JSON.stringify(initialWidths) ? initialWidths : prevWidths;
+        });
     }, [entries, labels, columns]);
 
     const sortedEntries = (entries, column, direction) => {
