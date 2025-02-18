@@ -38,21 +38,21 @@ export default function DataManager({ name, labels = [], entries = [], setEntrie
         if (!labels || !entries) {
             return [];
         }
-    
+
         const modifiedLabels = labels.flatMap((label) =>
-            label === 'Date & Time' ? ['Date', 'Time'] : label
+            label === 'Date & Time' ? ['Date', 'Time'] : label,
         );
-    
+
         let csvData = [];
         csvData.push(modifiedLabels);
-    
+
         entries.forEach((entry) => {
             let row = [];
             labels.forEach((label) => {
                 if (label !== 'Actions') {
                     let key = getKey(label, name);
                     let value = entry.data()[key];
-    
+
                     if (label === 'Date & Time') {
                         const [date, time] = value ? value.split(' ') : ['N/A', 'N/A'];
                         row.push(date, time);
@@ -63,10 +63,9 @@ export default function DataManager({ name, labels = [], entries = [], setEntrie
             });
             csvData.push(row);
         });
-    
+
         return csvData;
     };
-    
 
     const getCSVName = (entry) => {
         if (!entry) {

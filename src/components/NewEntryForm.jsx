@@ -33,16 +33,16 @@ export default function NewEntryForm() {
     const sessionIndexMap = sessions.map((index) => index);
 
     useEffect(() => {
-        console.log("Getting sessions for:", environment, project.replace(/\s/g, ''), year);
+        console.log('Getting sessions for:', environment, project.replace(/\s/g, ''), year);
         getSessionsByProjectAndYear(environment, project.replace(/\s/g, ''), year).then(
             (sessions) => {
-                console.log("Retrieved sessions:", sessions);
+                console.log('Retrieved sessions:', sessions);
                 if (sessions.length > 0) {
-                    console.log("First session data:", sessions[0].data());
+                    console.log('First session data:', sessions[0].data());
                     setSessions(sessions);
                     setSelectedSessionIndex(0);
                 } else {
-                    console.log("No sessions found");
+                    console.log('No sessions found');
                     setSessions([]);
                     setSelectedSessionIndex(null);
                 }
@@ -61,7 +61,7 @@ export default function NewEntryForm() {
         array: '',
         commentsAboutTheArray: '',
     };
-    console.log("Current selected session:", selectedSession);
+    console.log('Current selected session:', selectedSession);
     useEffect(() => {
         setSelectedCritter('');
     }, [selectedSession.dateTime]);
@@ -202,14 +202,14 @@ const CritterForm = ({ critter, project, session, reset }) => {
         console.log('Initializing entry with session:', session);
         const tempEntry = {
             ...dataObjTemplate,
-            sessionDateTime: session.dateTime,  // This is what connects entry to session
+            sessionDateTime: session.dateTime, // This is what connects entry to session
             dateTime: session.dateTime,
             site: session.site,
             array: session.array,
             taxa: critter,
-            year: session.year
+            year: session.year,
         };
-    
+
         console.log('Created temp entry:', tempEntry);
         setEntry(tempEntry);
         hydrateSpeciesArrays(project, critter);
@@ -228,11 +228,11 @@ const CritterForm = ({ critter, project, session, reset }) => {
     };
 
     const addEntry = async () => {
-        console.log("Attempting to add entry:");
-        console.log("- Entry data:", entry);
-        console.log("- Project:", project);
-        console.log("- Environment:", environment);
-        console.log("- Session data:", session); 
+        console.log('Attempting to add entry:');
+        console.log('- Entry data:', entry);
+        console.log('- Project:', project);
+        console.log('- Environment:', environment);
+        console.log('- Session data:', session);
         if (verifyForm(critter, entry)) {
             if (await uploadNewEntry(entry, project, environment)) {
                 notify(Type.success, 'Successfully uploaded entry to session');
@@ -248,25 +248,25 @@ const CritterForm = ({ critter, project, session, reset }) => {
                     const disabled = session[key];
                     return (
                         <FormField
-                        key={index}
-                        disabled={disabled}
-                        fieldName={key}
-                        layout="vertical"
-                        value={entry[key]}
-                        setValue={(value) => {
-                            setEntry(prev => ({
-                                ...prev,
-                                [key]: value
-                            }));
-                        }}
-                        site={session.site}
-                        array={session.array}
-                        project={project}
-                        taxa={critter}
-                        entry={entry}
-                        addEntry={addEntry}
-                        speciesArray={speciesArrayPromise}
-                    />
+                            key={index}
+                            disabled={disabled}
+                            fieldName={key}
+                            layout="vertical"
+                            value={entry[key]}
+                            setValue={(value) => {
+                                setEntry((prev) => ({
+                                    ...prev,
+                                    [key]: value,
+                                }));
+                            }}
+                            site={session.site}
+                            array={session.array}
+                            project={project}
+                            taxa={critter}
+                            entry={entry}
+                            addEntry={addEntry}
+                            speciesArray={speciesArrayPromise}
+                        />
                     );
                 })}
             </div>
@@ -293,7 +293,8 @@ const SessionSummary = ({ session }) => {
     let formattedDate;
     try {
         const date = new Date(session.dateTime);
-        if (!isNaN(date.getTime())) {  // Check if date is valid
+        if (!isNaN(date.getTime())) {
+            // Check if date is valid
             const month = date.toLocaleString('default', { month: 'long' });
             const day = date.getDate();
             const year = date.getFullYear();

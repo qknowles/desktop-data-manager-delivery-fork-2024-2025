@@ -133,9 +133,14 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
         const sessionOneSplit = sessionOne.split(' | ');
         const sessionTwoSplit = sessionTwo.split(' | ');
 
-    
-        if (sessionOneSplit[1] !== sessionTwoSplit[1] || sessionOneSplit[2] !== sessionTwoSplit[2]) {
-            notify(Type.error, 'Selected sessions must be of the same site and array, merge failed.');
+        if (
+            sessionOneSplit[1] !== sessionTwoSplit[1] ||
+            sessionOneSplit[2] !== sessionTwoSplit[2]
+        ) {
+            notify(
+                Type.error,
+                'Selected sessions must be of the same site and array, merge failed.',
+            );
             return;
         }
 
@@ -185,7 +190,11 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
                                         </option>
                                         {sessions.map((documentSnapshot) => (
                                             <option key={documentSnapshot.id}>
-                                                {documentSnapshot.data().dateTime + " | " + documentSnapshot.data().site + " | Array-" + documentSnapshot.data().array}
+                                                {documentSnapshot.data().dateTime +
+                                                    ' | ' +
+                                                    documentSnapshot.data().site +
+                                                    ' | Array-' +
+                                                    documentSnapshot.data().array}
                                             </option>
                                         ))}
                                     </select>
@@ -204,7 +213,11 @@ export default function MergeSessionsModal({ showModal, closeModal }) {
                                         </option>
                                         {sessions.map((documentSnapshot) => (
                                             <option key={documentSnapshot.id}>
-                                                {documentSnapshot.data().dateTime + " | " + documentSnapshot.data().site + " | Array-" + documentSnapshot.data().array}
+                                                {documentSnapshot.data().dateTime +
+                                                    ' | ' +
+                                                    documentSnapshot.data().site +
+                                                    ' | Array-' +
+                                                    documentSnapshot.data().array}
                                             </option>
                                         ))}
                                     </select>

@@ -83,9 +83,9 @@ const DataForm = () => {
         if (!labels || !entries) return [];
 
         const modifiedLabels = labels.flatMap((label) =>
-            label === 'Date & Time' ? ['Date', 'Time'] : label
+            label === 'Date & Time' ? ['Date', 'Time'] : label,
         );
-    
+
         const csvData = [modifiedLabels];
 
         entries.forEach((entry) => {
@@ -93,13 +93,13 @@ const DataForm = () => {
                 if (label === 'Date & Time') {
                     const dateTime = entry[getKey(label, 'Data')];
                     if (!dateTime) return ['N/A', 'N/A'];
-    
+
                     const [date, time] = dateTime.split(' ');
                     return [date, time];
                 }
                 return label !== 'Actions' ? entry[getKey(label, 'Data')] || 'N/A' : '';
             });
-    
+
             csvData.push(row);
         });
 
@@ -196,15 +196,15 @@ const SessionForm = () => {
         const entries = [];
         const collectionName =
             environment === 'live' ? `${project}Session` : `Test${project}Session`;
-    
+
         const collectionSnapshot = await getDocs(collection(db, collectionName));
         collectionSnapshot.forEach((doc) => entries.push(doc.data()));
-    
+
         entries.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
-    
+
         const tempCsvData = entries.map((entry) => {
             const [date, time] = entry.dateTime ? entry.dateTime.split(' ') : ['N/A', 'N/A'];
-    
+
             return {
                 Year: entry.year || 'N/A',
                 Date: date,
@@ -213,17 +213,16 @@ const SessionForm = () => {
                 Handler: entry.handler || 'N/A',
                 Site: entry.site || 'N/A',
                 Array: entry.array || 'N/A',
-                "No Captures": entry.noCaptures || 'N/A',
-                "Trap Status": entry.trapStatus || 'N/A',
-                "Comments About The Array": entry.commentsAboutTheArray || 'N/A',
+                'No Captures': entry.noCaptures || 'N/A',
+                'Trap Status': entry.trapStatus || 'N/A',
+                'Comments About The Array': entry.commentsAboutTheArray || 'N/A',
             };
         });
-    
+
         setCsvData(tempCsvData);
         setDisabledState(true);
         setButtonText('CSV Generated');
     };
-    
 
     return (
         <div className="flex flex-col items-center p-10">

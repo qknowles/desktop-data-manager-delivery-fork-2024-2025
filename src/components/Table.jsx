@@ -52,7 +52,9 @@ export const Table = ({ labels, columns, entries, name, setEntries }) => {
     useEffect(() => {
         const initialWidths = calculateColumnWidths();
         setColumnWidths((prevWidths) => {
-            return JSON.stringify(prevWidths) !== JSON.stringify(initialWidths) ? initialWidths : prevWidths;
+            return JSON.stringify(prevWidths) !== JSON.stringify(initialWidths)
+                ? initialWidths
+                : prevWidths;
         });
     }, [entries, labels, columns]);
 

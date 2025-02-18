@@ -48,8 +48,8 @@ export const TableEntry = forwardRef((props, ref) => {
                     ? 'uploadSessionEdits'
                     : 'uploadEntryEdits'
                 : tableName.includes('Session')
-                    ? 'deleteSession'
-                    : 'deleteEntry';
+                  ? 'deleteSession'
+                  : 'deleteEntry';
 
         startEntryOperation(operationType, {
             entrySnapshot,
@@ -96,16 +96,16 @@ export const TableEntry = forwardRef((props, ref) => {
                                 getLabel(key) === 'Date & Time'
                                     ? 'dateTimeColumn'
                                     : getLabel(key) === 'Site'
-                                        ? 'siteColumn'
-                                        : getLabel(key) === 'Year'
-                                            ? 'yearColumn'
-                                            : getLabel(key) === 'Taxa'
-                                                ? 'taxaColumn'
-                                                : getLabel(key) === 'Genus'
-                                                    ? 'genusColumn'
-                                                    : getLabel(key) === 'Species'
-                                                        ? 'speciesColumn'
-                                                        : ''
+                                      ? 'siteColumn'
+                                      : getLabel(key) === 'Year'
+                                        ? 'yearColumn'
+                                        : getLabel(key) === 'Taxa'
+                                          ? 'taxaColumn'
+                                          : getLabel(key) === 'Genus'
+                                            ? 'genusColumn'
+                                            : getLabel(key) === 'Species'
+                                              ? 'speciesColumn'
+                                              : ''
                             }
                         />
                     ),
@@ -129,8 +129,8 @@ const EntryItem = ({ dbKey, entryUIState, setEntryData, entryData, className }) 
                 ? isTrueKey
                     ? 'true'
                     : isFalseKey
-                        ? 'false'
-                        : prev[dbKey]
+                      ? 'false'
+                      : prev[dbKey]
                 : e.target.value,
         }));
     };

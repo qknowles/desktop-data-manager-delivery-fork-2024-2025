@@ -204,7 +204,7 @@ export const uploadNewEntry = async (entryData, project, environment) => {
         console.log('Starting uploadNewEntry with:', {
             project,
             environment,
-            entryData
+            entryData,
         });
 
         // Handle Arthropod special case
@@ -239,8 +239,8 @@ export const uploadNewEntry = async (entryData, project, environment) => {
         // Handle Lizard special case
         if (entryData.taxa === 'Lizard') {
             try {
-                await updateDoc(doc(db, 'Metadata', 'LizardData'), { 
-                    lastEditTime: now.getTime() 
+                await updateDoc(doc(db, 'Metadata', 'LizardData'), {
+                    lastEditTime: now.getTime(),
                 });
             } catch (error) {
                 console.error('Error updating lizard metadata:', error);
@@ -252,9 +252,9 @@ export const uploadNewEntry = async (entryData, project, environment) => {
         for (const [key, value] of Object.entries(entryData)) {
             if (key === 'sessionId' && !value) {
                 // If sessionId is missing but we have sessionDateTime, generate from that
-                cleanedData[key] = entryData.sessionDateTime ? 
-                    new Date(entryData.sessionDateTime).getTime() : 
-                    now.getTime();
+                cleanedData[key] = entryData.sessionDateTime
+                    ? new Date(entryData.sessionDateTime).getTime()
+                    : now.getTime();
             } else {
                 cleanedData[key] = value === undefined || value === '' ? 'N/A' : value;
             }
@@ -267,7 +267,7 @@ export const uploadNewEntry = async (entryData, project, environment) => {
         console.log('Attempting to write to Firestore:', {
             collectionName,
             entryId,
-            finalData: cleanedData
+            finalData: cleanedData,
         });
 
         try {
@@ -282,7 +282,7 @@ export const uploadNewEntry = async (entryData, project, environment) => {
                 message: writeError.message,
                 stack: writeError.stack,
                 collectionName,
-                entryId
+                entryId,
             });
             return false;
         }
@@ -291,7 +291,7 @@ export const uploadNewEntry = async (entryData, project, environment) => {
         console.error('Error details:', {
             code: error.code,
             message: error.message,
-            stack: error.stack
+            stack: error.stack,
         });
         return false;
     }
@@ -320,7 +320,8 @@ const getAnswerSetOptions = async (setName) => {
 };
 
 export const getSitesForProject = (projectName) => getAnswerSetOptions(`${projectName}Sites`);
-export const getArraysForSite = (projectName, siteName) => getAnswerSetOptions(`${projectName}${siteName}Array`);
+export const getArraysForSite = (projectName, siteName) =>
+    getAnswerSetOptions(`${projectName}${siteName}Array`);
 export const getTrapStatuses = () => getAnswerSetOptions('trap statuses');
 export const getFenceTraps = () => getAnswerSetOptions('Fence Traps');
 export const getSexes = () => getAnswerSetOptions('Sexes');
@@ -364,5 +365,5 @@ export {
     deleteDocumentFromFirestore,
     editSessionAndItsEntries,
     deleteSessionAndItsEntries,
-    updateLizardMetadata
+    updateLizardMetadata,
 };
