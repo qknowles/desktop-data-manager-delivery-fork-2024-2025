@@ -1,3 +1,9 @@
+/*
+ * Field Day
+ *
+ * Version: 3-7-2025
+ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
