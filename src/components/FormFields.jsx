@@ -680,7 +680,7 @@ const ToeClipCodeField = ({ toeCode, setToeCode, project, site, speciesCode, rec
         else setButtonText('Generate');
         setToeCode('');
         setToeCodeIsValid(undefined);
-    }, [recapture, speciesCode]);
+    }, [recapture, speciesCode]); // this comment is to ensure commit is part of toe code reset
 
     const generateNewToeCode = async () => {
         if (!(speciesCode === '' || speciesCode === null || speciesCode === undefined)) {
