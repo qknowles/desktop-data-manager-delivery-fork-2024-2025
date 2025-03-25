@@ -1,5 +1,5 @@
-import { useAtom } from "jotai";
-import { appMode } from "../utils/jotai";
+import { useAtom } from 'jotai';
+import { appMode } from '../utils/jotai';
 import React from 'react';
 
 export default function EnvironmentSelector() {
@@ -12,10 +12,7 @@ export default function EnvironmentSelector() {
     return (
         <div className="flex items-center space-x-5">
             <label>Data Source:</label>
-            <select
-                value={environment}
-                onChange={handleEnvironmentChange}
-            >
+            <select value={environment} onChange={handleEnvironmentChange}>
                 <option value="test">Test</option>
                 <option value="live">Live</option>
             </select>
