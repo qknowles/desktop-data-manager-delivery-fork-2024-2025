@@ -32,6 +32,7 @@ export class Authenticator {
             email: email,
             loginDate: now.toLocaleDateString(),
             loginTime: now.toLocaleTimeString(),
+            platform: 'desktop' // Added platform field
         });
         console.log(`Login recorded for: ${email}`);
     }

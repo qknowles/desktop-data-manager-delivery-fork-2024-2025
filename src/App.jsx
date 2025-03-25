@@ -22,11 +22,6 @@ function App() {
         }
     };
 
-    const handleLogout = async () => {
-        await auth.logout();
-        setUserEmail(null); // Clear user email on logout
-    };
-
     const pageMap = {
         Home: <HomePage />,
         Table: <TablePage />,
@@ -48,4 +43,3 @@ function App() {
 }
 
 export default App;
-
