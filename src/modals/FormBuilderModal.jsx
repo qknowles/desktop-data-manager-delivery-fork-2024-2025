@@ -1,5 +1,5 @@
-import Modal from "../components/Modal";
-import { FormBuilder } from "../pages";
+import Modal from '../components/Modal';
+import { FormBuilder } from '../pages';
 import React, { useState } from 'react';
 
 export default function FormBuilderModal({ showModal, onCancel, onOkay, triggerRerender }) {
@@ -11,7 +11,8 @@ export default function FormBuilderModal({ showModal, onCancel, onOkay, triggerR
         }
     };
 
-    console.log("Rendering FormBuilderModal - Current modalStep:", modalStep);
+    // Non-functional testing purposes only
+    // console.log('Rendering FormBuilderModal - Current modalStep:', modalStep);
 
     return (
         <Modal
@@ -28,7 +29,6 @@ export default function FormBuilderModal({ showModal, onCancel, onOkay, triggerR
             }}
         >
             <div className="w-[600px] h-[400px] p-4 bg-white dark:bg-neutral-900 rounded-lg shadow-lg flex items-center justify-center">
-
                 {/* Ensure inner FormBuilder also respects square shape */}
                 <FormBuilder
                     triggerRerender={triggerRerender}
@@ -39,4 +39,3 @@ export default function FormBuilderModal({ showModal, onCancel, onOkay, triggerR
         </Modal>
     );
 }
-
